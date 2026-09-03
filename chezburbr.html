@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chezburbr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bun:        #EBD9B0;
+    --bun-deep:   #DCC188;
+    --char:       #241C15;
+    --char-soft:  #574636;
+    --mustard:    #E3A21C;
+    --pickle:     #5E7A34;
+    --ketchup:    #B93524;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  html{ scroll-behavior:smooth; }
+
+  body{
+    background: var(--bun);
+    color: var(--char);
+    font-family:"Newsreader", Georgia, serif;
+    font-size:clamp(17px, 1.15vw + 14px, 21px);
+    line-height:1.62;
+    font-weight:400;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* toasted vignette so the page reads like a surface, not a screen */
+  body::before{
+    content:"";
+    position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:
+      radial-gradient(120% 90% at 50% -10%, rgba(255,246,222,.55), transparent 55%),
+      radial-gradient(120% 120% at 50% 115%, rgba(120,84,40,.20), transparent 60%);
+  }
+
+  #seeds{ position:fixed; inset:0; pointer-events:none; z-index:0; }
+  .seed{
+    position:absolute; width:9px; height:5px; border-radius:50%;
+    background:var(--bun-deep); opacity:.5;
+  }
+
+  main{ position:relative; z-index:1; }
+
+  .wrap{
+    max-width:min(1080px, 92vw);
+    margin:0 auto;
+    padding:0 clamp(4px, 2vw, 24px);
+  }
+
+  /* ---------- hero ---------- */
+
+  header{
+    min-height:100svh;
+    display:flex; flex-direction:column; justify-content:center;
+    padding:14vh 0 8vh;
+  }
+
+  h1{
+    font-family:"Bricolage Grotesque", system-ui, sans-serif;
+    font-weight:800;
+    font-size:clamp(3.1rem, 15.5vw, 13rem);
+    line-height:.84;
+    letter-spacing:-.045em;
+    white-space:nowrap;
+    margin-left:-.04em;
+  }
+  h1 .c{ display:inline-block; will-change:transform; }
+
+  .hero-sub{
+    max-width:34ch;
+    margin-top:clamp(1.6rem, 4vh, 3rem);
+    font-size:1.06em;
+    color:var(--char-soft);
+  }
+  .hero-sub strong{ font-weight:500; color:var(--char); }
+
+  .nudge{
+    margin-top:1.5rem;
+    font-family:"Bricolage Grotesque", system-ui, sans-serif;
+    font-size:.72em; font-weight:600; letter-spacing:.01em;
+    color:var(--pickle);
+  }
+
+  /* ---------- sections ---------- */
+
+  section{ padding:clamp(3.5rem, 11vh, 8rem) 0; }
+
+  h2{
+    font-family:"Bricolage Grotesque", system-ui, sans-serif;
+    font-weight:600;
+    font-size:clamp(1.5rem, 3.6vw, 2.5rem);
+    letter-spacing:-.025em;
+    line-height:1.08;
+    margin-bottom:1.6rem;
+    max-width:20ch;
+  }
+
+  p{ max-width:60ch; margin-bottom:1.05rem; }
+  p.lede{ font-size:1.15em; max-width:52ch; }
+  p.aside{ font-size:.9em; color:var(--char-soft); max-width:48ch; margin-bottom:2rem; }
+
+  .divider{ display:flex; justify-content:center; padding:.5rem 0; }
+  .divider i{
+    display:block; width:16px; height:9px; border-radius:50%;
+    background:var(--bun-deep); transform:rotate(-14deg);
+  }
+
+  /* ---------- work list ---------- */
+
+  .work{ border-top:1px solid rgba(36,28,21,.16); }
+
+  .row{
+    display:grid;
+    grid-template-columns:minmax(0,16rem) minmax(0,1fr);
+    gap:.5rem clamp(1rem, 4vw, 3.5rem);
+    padding:1.25rem 0;
+    border-bottom:1px solid rgba(36,28,21,.16);
+    align-items:baseline;
+  }
+  .row .name{
+    font-family:"Bricolage Grotesque", system-ui, sans-serif;
+    font-weight:600; font-size:1.02em; letter-spacing:-.015em;
+  }
+  .row .langs{
+    font-family:"Bricolage Grotesque", system-ui, sans-serif;
+    font-size:.7em; line-height:1.5; margin-top:.3rem;
+  }
+  .row .langs .main{ font-weight:600; color:var(--pickle); }
+  .row .langs .also{ color:var(--char-soft); font-weight:400; }
+  .row .what{ color:var(--char-soft); max-width:56ch; }
+  @media (max-width:640px){
+    .row{ grid-template-columns:1fr; }
+  }
+
+  /* ---------- name origin ---------- */
+
+  .steps{ border-top:1px solid rgba(36,28,21,.16); max-width:64ch; margin-bottom:2rem; }
+  .step{
+    display:grid;
+    grid-template-columns:minmax(0,13rem) minmax(0,1fr);
+    gap:.25rem clamp(1rem, 4vw, 3rem);
+    padding:.95rem 0;
+    border-bottom:1px solid rgba(36,28,21,.16);
+    align-items:baseline;
+  }
+  .step .n{
+    font-family:"Bricolage Grotesque", system-ui, sans-serif;
+    font-weight:600; font-size:1.18em; letter-spacing:-.02em;
+  }
+  .step:last-child .n{ color:var(--ketchup); }
+  .step .note{ color:var(--char-soft); font-size:.95em; max-width:46ch; }
+  @media (max-width:640px){
+    .step{ grid-template-columns:1fr; }
+  }
+
+  /* ---------- facts ---------- */
+
+  .facts{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(15rem, 1fr));
+    gap:clamp(1.4rem, 4vw, 3rem);
+    margin-top:.5rem;
+  }
+  .fact h3{
+    font-family:"Bricolage Grotesque", system-ui, sans-serif;
+    font-weight:600; font-size:1em; margin-bottom:.35rem;
+  }
+  .fact p{ color:var(--char-soft); font-size:.95em; max-width:38ch; }
+
+  /* ---------- footer ---------- */
+
+  footer{
+    padding:clamp(3rem, 9vh, 6rem) 0 clamp(4rem, 12vh, 8rem);
+    border-top:1px solid rgba(36,28,21,.16);
+    color:var(--char-soft);
+    font-size:.95em;
+  }
+  footer a{ color:var(--char); text-decoration:none; border-bottom:1px solid var(--mustard); }
+  footer a:hover{ background:var(--mustard); }
+  footer a:focus-visible{ outline:2px solid var(--ketchup); outline-offset:3px; }
+
+  /* ---------- float control ---------- */
+
+  .control{
+    position:fixed; right:clamp(12px,2.5vw,26px); bottom:clamp(12px,2.5vw,26px);
+    z-index:5;
+    display:flex; align-items:center; gap:.6rem;
+    padding:.5rem .8rem;
+    background:rgba(235,217,176,.82);
+    backdrop-filter:blur(6px);
+    border:1px solid rgba(36,28,21,.18);
+    border-radius:999px;
+    font-family:"Bricolage Grotesque", system-ui, sans-serif;
+    font-size:13px; font-weight:600; color:var(--char-soft);
+  }
+  .control input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    width:96px; height:3px; background:rgba(36,28,21,.25); border-radius:2px;
+  }
+  .control input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:15px; height:15px; border-radius:50%;
+    background:var(--mustard); border:1px solid rgba(36,28,21,.35); cursor:grab;
+  }
+  .control input[type=range]::-moz-range-thumb{
+    width:15px; height:15px; border-radius:50%;
+    background:var(--mustard); border:1px solid rgba(36,28,21,.35); cursor:grab;
+  }
+  .control input:focus-visible{ outline:2px solid var(--ketchup); outline-offset:4px; }
+
+  .w, .c{ display:inline-block; will-change:transform; }
+
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+  }
+</style>
+</head>
+<body>
+
+<div id="seeds" aria-hidden="true"></div>
+
+<main>
+<div class="wrap">
+
+  <header>
+    <h1 id="name" aria-label="Chezburbr">Chezburbr</h1>
+    <p class="hero-sub float"><strong>Nolan Barringer.</strong> I build things in the browser, because it's the shortest distance between an idea and something I can actually click on.</p>
+    <p class="nudge float">Run your cursor through the letters. They'll get out of the way.</p>
+  </header>
+
+  <div class="divider"><i></i></div>
+
+  <section>
+    <h2 class="float">Almost everything I make is one file</h2>
+    <p class="lede float">No build step, no install, no folder of config I'll never open again. One HTML file, double-click it, it runs. If a friend wants it, I send them the file.</p>
+    <p class="float">It's a constraint I picked on purpose. It keeps projects small enough to finish and weird enough to be worth finishing. A voxel game, an audio mixer, a whole operating system &mdash; all of them are just a page.</p>
+    <p class="float">I don't work in tidy checkpoints. I'd rather build the whole thing loudly, break it, and figure out what it wanted to be on the way down.</p>
+  </section>
+
+  <div class="divider"><i></i></div>
+
+  <section>
+    <h2 class="float">Things I've built</h2>
+    <p class="aside float">The green line is what each one is mostly written in. Everything after the plus is along for the ride.</p>
+    <div class="work">
+
+      <div class="row">
+        <div>
+          <div class="name float">Muzix Lab</div>
+          <div class="langs float"><span class="main">JavaScript</span> <span class="also">+ HTML, CSS, Muzix</span></div>
+        </div>
+        <div class="what float">An IDE for Muzix, a music programming language I invented. Loops, chord syntax, named blocks, an oscilloscope and a spectrum analyzer.</div>
+      </div>
+
+      <div class="row">
+        <div>
+          <div class="name float">ChezCrush</div>
+          <div class="langs float"><span class="main">JavaScript</span> <span class="also">+ HTML, CSS</span></div>
+        </div>
+        <div class="what float">An audio mixer with DJ decks, a triangle crossfader, LFO banks, bitcrush, key detection, and 51 hotkeys.</div>
+      </div>
+
+      <div class="row">
+        <div>
+          <div class="name float">ChezSplit</div>
+          <div class="langs float"><span class="main">Python</span> <span class="also">+ JavaScript, HTML</span></div>
+        </div>
+        <div class="what float">Sends my desktop audio to every speaker in the house at once, with per-device volume and drift correction. Started as a browser demo, ended up a desktop app.</div>
+      </div>
+
+      <div class="row">
+        <div>
+          <div class="name float">Floatbox &amp; Forge</div>
+          <div class="langs float"><span class="main">JavaScript</span> <span class="also">+ HTML, CSS</span></div>
+        </div>
+        <div class="what float">A first-person physics sandbox and the world editor that feeds it, sharing a binary format I wrote called .waffle. Grapple hook, working toaster, map-wiping nuke.</div>
+      </div>
+
+      <div class="row">
+        <div>
+          <div class="name float">VoxelCraft</div>
+          <div class="langs float"><span class="main">JavaScript</span> <span class="also">+ HTML, CSS, Python</span></div>
+        </div>
+        <div class="what float">Minecraft in a single file. Caves, multiplayer, its own .vxw world format, and a Python shell to make it a real desktop app.</div>
+      </div>
+
+      <div class="row">
+        <div>
+          <div class="name float">Nookyx</div>
+          <div class="langs float"><span class="main">JavaScript</span> <span class="also">+ HTML, CSS</span></div>
+        </div>
+        <div class="what float">An operating system that is, structurally speaking, one web page. Accounts, spotlight search, terminal, weather.</div>
+      </div>
+
+      <div class="row">
+        <div>
+          <div class="name float">Chez le Web</div>
+          <div class="langs float"><span class="main">Python</span> <span class="also">+ JavaScript, HTML, CSS, JSON</span></div>
+        </div>
+        <div class="what float">My own browser, with its own extension format, its own permissions, and its own little store.</div>
+      </div>
+
+      <div class="row">
+        <div>
+          <div class="name float">LEDGE</div>
+          <div class="langs float"><span class="main">JavaScript</span> <span class="also">+ HTML, CSS, JSON</span></div>
+        </div>
+        <div class="what float">Seven tools I got tired of searching for, hidden behind a ghost handle on the edge of the screen. One of them encodes URLs through a Vigen&egrave;re cipher.</div>
+      </div>
+
+      <div class="row">
+        <div>
+          <div class="name float">Root Cause</div>
+          <div class="langs float"><span class="main">JavaScript</span> <span class="also">+ HTML, CSS</span></div>
+        </div>
+        <div class="what float">A comedy terminal game. You type made-up commands at absurd problems and hope the trust meter holds.</div>
+      </div>
+
+      <div class="row">
+        <div>
+          <div class="name float">Playbank</div>
+          <div class="langs float"><span class="main">JavaScript</span> <span class="also">+ HTML, CSS</span></div>
+        </div>
+        <div class="what float">A play-money card terminal with OCR card scanning and several cashiers staying in sync at once.</div>
+      </div>
+
+      <div class="row">
+        <div>
+          <div class="name float">Bullandish</div>
+          <div class="langs float"><span class="main">JavaScript</span> <span class="also">+ HTML, CSS, Bullandish</span></div>
+        </div>
+        <div class="what float">A language I made up, a 500-word dictionary for it, and the translator that makes other people speak it.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="divider"><i></i></div>
+
+  <section>
+    <h2 class="float">Where the name came from</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="n float">Cheeseburger</div>
+        <div class="note float">Favorite food. That's the whole origin.</div>
+      </div>
+      <div class="step">
+        <div class="n float">Cheezburger</div>
+        <div class="note float">A Roblox reference did the first round of damage.</div>
+      </div>
+      <div class="step">
+        <div class="n float">Chezburger</div>
+        <div class="note float">"Chez" was my signature at the time, so it got folded in.</div>
+      </div>
+      <div class="step">
+        <div class="n float">Chezburbur</div>
+        <div class="note float">How I said it out loud as a kid, written down exactly as it sounded.</div>
+      </div>
+      <div class="step">
+        <div class="n float">Chezburbr</div>
+        <div class="note float">Blooket capped usernames at nine characters. This is what fit.</div>
+      </div>
+    </div>
+    <p class="float">When I typed that last one in, I said out loud that it'd be funny if people actually knew me as Chezburbr. That was supposed to be a joke for about a week.</p>
+    <p class="float">It's been years. Nobody calls me anything else.</p>
+  </section>
+
+  <div class="divider"><i></i></div>
+
+  <section>
+    <h2 class="float">Also true</h2>
+    <div class="facts">
+      <div class="fact">
+        <h3 class="float">The monitors</h3>
+        <p class="float">More screens than the desk was designed for, stitched together so one window can span the whole wall.</p>
+      </div>
+      <div class="fact">
+        <h3 class="float">The food</h3>
+        <p class="float">Cheeseburger. Still. It named me and I've never had a reason to reconsider.</p>
+      </div>
+      <div class="fact">
+        <h3 class="float">The method</h3>
+        <p class="float">Take it apart, see what it's hiding, rebuild it worse on purpose, then keep the parts that turned out better.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p class="float">Built in one file, by hand. Everything above runs in a browser and nothing above needed a server.</p>
+    <p class="float">More of it lives at <a href="https://github.com/Nolanbrianb">github.com/Nolanbrianb</a>.</p>
+  </footer>
+
+</div>
+</main>
+
+<div class="control">
+  <label for="float-range">float</label>
+  <input id="float-range" type="range" min="0" max="130" value="32" aria-label="How far text moves away from the cursor">
+</div>
+
+<script>
+(() => {
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- sesame seeds ---------- */
+  const seedLayer = document.getElementById('seeds');
+  for (let i = 0; i < 26; i++) {
+    const s = document.createElement('div');
+    s.className = 'seed';
+    s.style.left = (Math.random() * 100).toFixed(2) + '%';
+    s.style.top  = (Math.random() * 100).toFixed(2) + '%';
+    s.style.transform = 'rotate(' + (Math.random() * 180 - 90).toFixed(1) + 'deg)';
+    s.style.opacity = (0.25 + Math.random() * 0.35).toFixed(2);
+    seedLayer.appendChild(s);
+  }
+
+  /* ---------- split text into floatable pieces ---------- */
+  const items = [];
+
+  function push(el, hero, index) {
+    items.push({
+      el, hero,
+      cx: 0, cy: 0,
+      ox: 0, oy: 0,
+      vx: 0, vy: 0,
+      tint: -1,
+      // per-letter phase offsets so the hero never glides in lockstep
+      phX: hero ? index * 0.85 + Math.random() * 0.5 : 0,
+      phY: hero ? index * 1.35 + Math.random() * 0.5 : 0,
+      lag: hero ? 0.72 + Math.random() * 0.5 : 1
+    });
+  }
+
+  const heroEl = document.getElementById('name');
+  const heroText = heroEl.textContent;
+  heroEl.textContent = '';
+  let hi = 0;
+  for (const ch of heroText) {
+    const span = document.createElement('span');
+    span.className = 'c';
+    span.textContent = ch;
+    heroEl.appendChild(span);
+    push(span, true, hi++);
+  }
+
+  for (const el of document.querySelectorAll('.float')) {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const texts = [];
+    let n;
+    while ((n = walker.nextNode())) texts.push(n);
+
+    for (const node of texts) {
+      if (!node.nodeValue.trim()) continue;
+      const frag = document.createDocumentFragment();
+      const parts = node.nodeValue.split(/(\s+)/);
+      for (const part of parts) {
+        if (!part) continue;
+        if (/^\s+$/.test(part)) {
+          frag.appendChild(document.createTextNode(part));
+        } else {
+          const span = document.createElement('span');
+          span.className = 'w';
+          span.textContent = part;
+          frag.appendChild(span);
+          push(span, false, 0);
+        }
+      }
+      node.parentNode.replaceChild(frag, node);
+    }
+  }
+
+  /* ---------- measurement ---------- */
+  function measure() {
+    for (const it of items) it.el.style.transform = 'none';
+    const sx = window.scrollX, sy = window.scrollY;
+    for (const it of items) {
+      const r = it.el.getBoundingClientRect();
+      it.cx = r.left + sx + r.width / 2;
+      it.cy = r.top + sy + r.height / 2;
+    }
+    for (const it of items) {
+      it.el.style.transform = 'translate3d(' + it.ox + 'px,' + it.oy + 'px,0)';
+    }
+  }
+
+  measure();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+  window.addEventListener('load', measure);
+
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(measure, 120);
+  });
+
+  /* ---------- pointer ---------- */
+  const P = { x: -99999, y: -99999, on: false };
+
+  window.addEventListener('pointermove', (e) => {
+    P.x = e.clientX + window.scrollX;
+    P.y = e.clientY + window.scrollY;
+    P.on = true;
+    wake();
+  }, { passive: true });
+
+  window.addEventListener('pointerleave', () => { P.on = false; wake(); });
+  window.addEventListener('blur', () => { P.on = false; wake(); });
+  window.addEventListener('scroll', wake, { passive: true });
+
+  /* ---------- tuning ---------- */
+  const range = document.getElementById('float-range');
+  let PUSH = reduced ? 12 : 32;
+  range.value = PUSH;
+  range.addEventListener('input', () => { PUSH = +range.value; wake(); });
+
+  const R_WORD = 150;
+  const R_HERO = 230;
+  const K = 0.17;      // spring stiffness for body text
+  const DAMP = 0.76;   // how quickly it settles
+
+  // passive hero glide
+  const GLIDE_X = reduced ? 0 : 7.5;   // horizontal amplitude, px
+  const GLIDE_Y = reduced ? 0 : 4.5;   // vertical amplitude, px
+  const SPD_X = 0.00062;               // horizontal speed
+  const SPD_Y = 0.00027;               // vertical, deliberately slower
+
+  const CHAR_RGB = [36, 28, 21];
+  const HOT_RGB  = [185, 53, 35];
+
+  /* ---------- loop ---------- */
+  let running = false;
+
+  function wake() {
+    if (!running) { running = true; requestAnimationFrame(frame); }
+  }
+
+  function frame(now) {
+    const sy = window.scrollY;
+    const top = sy - 300, bottom = sy + window.innerHeight + 300;
+    let busy = false;
+
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      const visible = it.cy > top && it.cy < bottom;
+
+      // passive drift, hero only
+      let ix = 0, iy = 0;
+      if (it.hero && GLIDE_X) {
+        ix = Math.sin(now * SPD_X + it.phX) * GLIDE_X;
+        iy = Math.sin(now * SPD_Y + it.phY) * GLIDE_Y;
+      }
+
+      // cursor shove, which outweighs the drift by a mile
+      let px = 0, py = 0;
+      if (P.on && PUSH > 0 && visible) {
+        const dx = it.cx - P.x, dy = it.cy - P.y;
+        const R = it.hero ? R_HERO : R_WORD;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < R * R) {
+          const d = Math.sqrt(d2) || 0.0001;
+          const fall = (1 - d / R);
+          const amount = PUSH * fall * fall * (it.hero ? 1.15 : 1);
+          px = (dx / d) * amount;
+          py = (dy / d) * amount;
+        }
+      }
+
+      const tx = ix + px, ty = iy + py;
+
+      // hero letters use a softer spring, so each one lags behind
+      // its own target for a beat before catching up
+      const k = it.hero ? K * 0.42 * it.lag : K;
+      const damp = it.hero ? 0.855 : DAMP;
+
+      it.vx = (it.vx + (tx - it.ox) * k) * damp;
+      it.vy = (it.vy + (ty - it.oy) * k) * damp;
+      it.ox += it.vx;
+      it.oy += it.vy;
+
+      if (it.hero) {
+        busy = true;
+        it.el.style.transform = 'translate3d(' + it.ox.toFixed(2) + 'px,' + it.oy.toFixed(2) + 'px,0)';
+
+        // heat is measured against the drift, not the origin,
+        // so idle gliding never tints the letters
+        const mag = Math.min(1, Math.hypot(it.ox - ix, it.oy - iy) / 70);
+        const stepv = Math.round(mag * 8);
+        if (stepv !== it.tint) {
+          it.tint = stepv;
+          const t = stepv / 8;
+          const r = Math.round(CHAR_RGB[0] + (HOT_RGB[0] - CHAR_RGB[0]) * t);
+          const g = Math.round(CHAR_RGB[1] + (HOT_RGB[1] - CHAR_RGB[1]) * t);
+          const b = Math.round(CHAR_RGB[2] + (HOT_RGB[2] - CHAR_RGB[2]) * t);
+          it.el.style.color = 'rgb(' + r + ',' + g + ',' + b + ')';
+        }
+        continue;
+      }
+
+      const moving = Math.abs(it.vx) + Math.abs(it.vy) > 0.02
+                  || Math.abs(it.ox) + Math.abs(it.oy) > 0.05;
+
+      if (moving) {
+        busy = true;
+        it.el.style.transform = 'translate3d(' + it.ox.toFixed(2) + 'px,' + it.oy.toFixed(2) + 'px,0)';
+      } else if (it.ox !== 0 || it.oy !== 0) {
+        it.ox = 0; it.oy = 0; it.vx = 0; it.vy = 0;
+        it.el.style.transform = 'translate3d(0,0,0)';
+      }
+    }
+
+    if (busy || P.on) {
+      requestAnimationFrame(frame);
+    } else {
+      running = false;
+    }
+  }
+
+  wake();
+
+  /* ---------- click shove ---------- */
+  window.addEventListener('pointerdown', (e) => {
+    if (reduced) return;
+    if (e.target.closest('.control, a')) return;
+    const px = e.clientX + window.scrollX, py = e.clientY + window.scrollY;
+    for (const it of items) {
+      const dx = it.cx - px, dy = it.cy - py;
+      const d = Math.hypot(dx, dy) || 0.0001;
+      if (d < 420) {
+        const f = (1 - d / 420) * 22;
+        it.vx += (dx / d) * f;
+        it.vy += (dy / d) * f;
+      }
+    }
+    wake();
+  });
+
+  /* ---------- type "burger" ---------- */
+  let buf = '';
+  window.addEventListener('keydown', (e) => {
+    if (e.key.length !== 1) return;
+    buf = (buf + e.key.toLowerCase()).slice(-6);
+    if (buf === 'burger') {
+      buf = '';
+      for (const it of items) {
+        it.vx += (Math.random() - 0.5) * 90;
+        it.vy += (Math.random() - 0.5) * 90;
+      }
+      wake();
+      const b = document.createElement('div');
+      b.textContent = '\u{1F354}';
+      b.style.cssText = 'position:fixed;left:50%;top:50%;font-size:88px;z-index:9;'
+        + 'transform:translate(-50%,-50%) scale(.4);opacity:0;pointer-events:none;'
+        + 'transition:transform .5s cubic-bezier(.2,1.5,.4,1),opacity .5s';
+      document.body.appendChild(b);
+      requestAnimationFrame(() => {
+        b.style.transform = 'translate(-50%,-50%) scale(1)';
+        b.style.opacity = '1';
+      });
+      setTimeout(() => {
+        b.style.opacity = '0';
+        b.style.transform = 'translate(-50%,-70%) scale(1)';
+      }, 900);
+      setTimeout(() => b.remove(), 1500);
+    }
+  });
+})();
+</script>
+</body>
+</html>
