@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guiding Light Generator</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: #16161a;
+    color: #e8e8ec;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+  .app { width: 100%; max-width: 600px; }
+  h1 { font-size: 18px; font-weight: 500; margin: 0 0 24px; text-align: center; }
+  label { display: block; font-size: 13px; font-weight: 500; color: #a3a3ab; margin-bottom: 8px; }
+  .light-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 24px; }
+  .light-btn {
+    padding: 10px 12px; border: 1px solid #333338; border-radius: 8px;
+    background: #1c1c20; cursor: pointer; font-size: 13px; font-weight: 500;
+    color: #e8e8ec; transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  }
+  .light-btn:hover { transform: translateY(-2px); background: #232327; }
+  .light-btn:active { transform: translateY(0); }
+  .light-btn.selected { background: #232327; border-color: #77777e; }
+  .light-btn[data-light="moonlight"]:hover { border-color: #3FE0E0; box-shadow: 0 0 14px rgba(63,224,224,0.35); }
+  .light-btn[data-light="starlight"]:hover { border-color: #FFDB4D; box-shadow: 0 0 14px rgba(255,219,77,0.35); }
+  .light-btn[data-light="mischievous"]:hover { border-color: #FF4D4D; box-shadow: 0 0 14px rgba(255,77,77,0.35); }
+  .light-btn[data-light="paradoxical"]:hover { border-color: #5FE04D; box-shadow: 0 0 14px rgba(95,224,77,0.35); }
+  .light-btn[data-light="moonlight"].selected { border-color: #3FE0E0; }
+  .light-btn[data-light="starlight"].selected { border-color: #FFDB4D; }
+  .light-btn[data-light="mischievous"].selected { border-color: #FF4D4D; }
+  .light-btn[data-light="paradoxical"].selected { border-color: #5FE04D; }
+
+  .hint { font-size: 12px; color: #77777e; margin: -4px 0 12px; }
+
+  .msg-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  #msg-input {
+    flex: 1; padding: 10px 12px; border: 1px solid #333338; border-radius: 8px;
+    font-size: 13px; background: #1c1c20; color: #e8e8ec; transition: border-color 0.15s ease;
+  }
+  #msg-input:focus { outline: none; border-color: #55555c; }
+  #add-msg {
+    padding: 0 16px; border: 1px solid #55555c; border-radius: 8px;
+    background: transparent; cursor: pointer; color: #e8e8ec; font-size: 16px;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  #add-msg:hover { transform: translateY(-2px); background: #232327; }
+  #add-msg:active { transform: translateY(0); }
+  #msg-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
+  .msg-item {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    background: #1c1c20; border-radius: 8px; font-size: 13px;
+  }
+  .msg-item span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .msg-item button {
+    background: none; border: none; cursor: pointer; color: #77777e; font-size: 14px;
+    padding: 0; transition: color 0.15s ease;
+  }
+  .msg-item button:hover { color: #e05a5a; }
+  #msg-error { display: none; font-size: 13px; color: #e05a5a; margin: 4px 0 0; }
+
+  .file-row { display: flex; gap: 8px; margin-top: 20px; }
+  .file-btn {
+    flex: 1; padding: 10px 12px; border: 1px solid #333338; border-radius: 8px;
+    background: transparent; cursor: pointer; font-size: 13px; font-weight: 500;
+    color: #a3a3ab; transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+  }
+  .file-btn:hover { transform: translateY(-2px); background: #232327; color: #e8e8ec; }
+  .file-btn:active { transform: translateY(0); }
+
+  #generate {
+    width: 100%; margin-top: 12px; padding: 11px 16px;
+    background: #4d7dff; color: #fff; border: none; border-radius: 8px;
+    font-size: 13px; font-weight: 500; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  }
+  #generate:hover { transform: translateY(-2px); background: #5d8aff; box-shadow: 0 0 16px rgba(77,125,255,0.4); }
+  #generate:active { transform: translateY(0); }
+
+  #preview-view { display: none; }
+  #preview-box {
+    position: relative; border-radius: 12px; overflow: hidden;
+    min-height: 340px; background: #060608; transition: opacity 0.6s ease;
+  }
+  #preview-box:fullscreen { min-height: 100vh; border-radius: 0; }
+  #preview-box:-webkit-full-screen { min-height: 100vh; border-radius: 0; }
+  #preview-box:fullscreen #msg-container { min-height: 100vh; }
+  #preview-box:-webkit-full-screen #msg-container { min-height: 100vh; }
+  #static-canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.5; }
+  #glow-layer { position: absolute; inset: 0; pointer-events: none; }
+  #msg-container {
+    position: relative; z-index: 2; min-height: 340px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; padding: 2rem; cursor: pointer;
+  }
+  #light-label {
+    position: absolute; top: 30px; left: 0; right: 0;
+    font-size: clamp(10px, 1vw, 15px); letter-spacing: 3px; text-transform: uppercase;
+    font-weight: 500; opacity: 0.75;
+  }
+  #light-message {
+    font-size: clamp(17px, 2.6vw, 34px); line-height: 1.7; margin: 0; font-weight: 500;
+    max-width: clamp(440px, 55vw, 920px);
+    opacity: 1; transition: opacity 0.5s ease;
+  }
+  #light-message.fading { opacity: 0; }
+  #light-message em { font-style: italic; }
+  #light-message strong { font-weight: 700; }
+  #fullscreen-btn {
+    position: absolute; top: 16px; right: 16px; z-index: 3;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    color: #e8e8ec; border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  #fullscreen-btn:hover { background: rgba(255,255,255,0.18); }
+
+  @keyframes sway {
+    0%   { transform: translate(-14px, 0px); }
+    25%  { transform: translate(0px, -9px); }
+    50%  { transform: translate(14px, 0px); }
+    75%  { transform: translate(0px, 9px); }
+    100% { transform: translate(-14px, 0px); }
+  }
+  @keyframes flicker {
+    0%, 100% { opacity: 1; }
+    46% { opacity: 1; }
+    47.5% { opacity: 0.55; }
+    49% { opacity: 1; }
+    74% { opacity: 1; }
+    75.3% { opacity: 0.8; }
+    76.6% { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Guiding light generator</h1>
+
+  <div id="settings-view">
+    <label>Light type</label>
+    <div class="light-grid">
+      <button data-light="moonlight" class="light-btn">Moonlight</button>
+      <button data-light="starlight" class="light-btn">Starlight</button>
+      <button data-light="mischievous" class="light-btn">Mischievous light</button>
+      <button data-light="paradoxical" class="light-btn">Paradoxical light</button>
+    </div>
+
+    <label>Messages</label>
+    <p class="hint">Supports *italic*, **bold**, ***bold italic***, and `highlighted`</p>
+    <div class="msg-row">
+      <input type="text" id="msg-input" placeholder="Add a line the light will say...">
+      <button id="add-msg">+</button>
+    </div>
+    <div id="msg-list"></div>
+    <p id="msg-error"></p>
+
+    <div class="file-row">
+      <button class="file-btn" id="save-prefs">Save preferences</button>
+      <button class="file-btn" id="load-prefs">Load preferences</button>
+      <input type="file" id="load-input" accept=".json" style="display:none">
+    </div>
+
+    <button id="generate">Generate light</button>
+  </div>
+
+  <div id="preview-view">
+    <div id="preview-box">
+      <canvas id="static-canvas"></canvas>
+      <div id="glow-layer"></div>
+      <button id="fullscreen-btn">⛶ Fullscreen</button>
+      <div id="msg-container">
+        <div id="light-label"></div>
+        <p id="light-message"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const lightStyles = {
+  moonlight: { glow: '#3FE0E0', accent: '#0E9E9E', rgb: '63,224,224', name: 'moonlight' },
+  starlight: { glow: '#FFDB4D', accent: '#BA9207', rgb: '255,219,77', name: 'starlight' },
+  mischievous: { glow: '#FF4D4D', accent: '#C42B2B', rgb: '255,77,77', name: 'mischievous light' },
+  paradoxical: { glow: '#5FE04D', accent: '#2E9E1F', rgb: '95,224,77', name: 'paradoxical light' }
+};
+
+let selectedLight = 'moonlight';
+let messages = [];
+let currentIndex = 0;
+let staticAnimId = null;
+let resizeStaticCanvas = null;
+
+/* ---------------- audio engine ---------------- */
+let currentAudioEls = [];
+let bitcrushCtx = null, bitcrushSource = null, bitcrushProcessor = null, bitcrushGain = null, bitcrushEl = null;
+
+function stopAllAudio() {
+  currentAudioEls.forEach(a => { try { a.pause(); } catch (e) {} });
+  currentAudioEls = [];
+  stopBitcrush();
+}
+
+function playLoopTrack(src) {
+  const audio = new Audio(src);
+  audio.loop = true;
+  audio.volume = 1;
+  audio.play().catch(() => {});
+  currentAudioEls = [audio];
+}
+
+function playLayeredLoop(introSrc, loopSrc) {
+  const intro = new Audio(introSrc);
+  intro.loop = false;
+  intro.volume = 1;
+  const loop = new Audio(loopSrc);
+  loop.loop = true;
+  loop.volume = 1;
+  intro.addEventListener('ended', () => {
+    if (currentAudioEls.indexOf(intro) !== -1) {
+      loop.play().catch(() => {});
+    }
+  });
+  intro.play().catch(() => {});
+  currentAudioEls = [intro, loop];
+}
+
+function playOnce(src) {
+  const audio = new Audio(src);
+  audio.loop = false;
+  audio.volume = 1;
+  audio.play().catch(() => {});
+  currentAudioEls = [audio];
+}
+
+function fadeOutCurrent(callback, duration) {
+  duration = duration || 900;
+  const els = currentAudioEls.slice();
+  currentAudioEls = [];
+  if (els.length === 0) { if (callback) callback(); return; }
+  const steps = 18;
+  const stepMs = duration / steps;
+  let step = 0;
+  const startVols = els.map(a => a.volume);
+  const timer = setInterval(() => {
+    step++;
+    els.forEach((a, i) => { a.volume = Math.max(0, startVols[i] * (1 - step / steps)); });
+    if (step >= steps) {
+      clearInterval(timer);
+      els.forEach(a => { try { a.pause(); } catch (e) {} });
+      if (callback) callback();
+    }
+  }, stepMs);
+}
+
+function playBitcrushLoop(src) {
+  bitcrushCtx = new (window.AudioContext || window.webkitAudioContext)();
+  bitcrushEl = new Audio(src);
+  bitcrushEl.loop = true;
+  bitcrushSource = bitcrushCtx.createMediaElementSource(bitcrushEl);
+  bitcrushProcessor = bitcrushCtx.createScriptProcessor(4096, 2, 2);
+
+  const bitDepth = 4;
+  const normFreq = 0.12;
+  const step = Math.pow(0.5, bitDepth);
+  let phaser = 0, lastL = 0, lastR = 0;
+
+  bitcrushProcessor.onaudioprocess = function (e) {
+    const inL = e.inputBuffer.getChannelData(0);
+    const inR = e.inputBuffer.numberOfChannels > 1 ? e.inputBuffer.getChannelData(1) : inL;
+    const outL = e.outputBuffer.getChannelData(0);
+    const outR = e.outputBuffer.getChannelData(1);
+    for (let i = 0; i < inL.length; i++) {
+      phaser += normFreq;
+      if (phaser >= 1.0) {
+        phaser -= 1.0;
+        lastL = step * Math.floor(inL[i] / step + 0.5);
+        lastR = step * Math.floor(inR[i] / step + 0.5);
+      }
+      outL[i] = lastL;
+      outR[i] = lastR;
+    }
+  };
+
+  bitcrushGain = bitcrushCtx.createGain();
+  bitcrushGain.gain.value = 1;
+  bitcrushSource.connect(bitcrushProcessor);
+  bitcrushProcessor.connect(bitcrushGain);
+  bitcrushGain.connect(bitcrushCtx.destination);
+  bitcrushEl.play().catch(() => {});
+}
+
+function fadeOutBitcrush(duration) {
+  duration = duration || 900;
+  if (!bitcrushGain || !bitcrushCtx) return;
+  const now = bitcrushCtx.currentTime;
+  bitcrushGain.gain.cancelScheduledValues(now);
+  bitcrushGain.gain.setValueAtTime(bitcrushGain.gain.value, now);
+  bitcrushGain.gain.linearRampToValueAtTime(0.0001, now + duration / 1000);
+  setTimeout(stopBitcrush, duration + 50);
+}
+
+function stopBitcrush() {
+  if (bitcrushEl) { try { bitcrushEl.pause(); } catch (e) {} bitcrushEl = null; }
+  if (bitcrushProcessor) { try { bitcrushProcessor.disconnect(); } catch (e) {} bitcrushProcessor = null; }
+  if (bitcrushSource) { try { bitcrushSource.disconnect(); } catch (e) {} bitcrushSource = null; }
+  if (bitcrushGain) { try { bitcrushGain.disconnect(); } catch (e) {} bitcrushGain = null; }
+  if (bitcrushCtx) { try { bitcrushCtx.close(); } catch (e) {} bitcrushCtx = null; }
+}
+
+function startAudioForLight(key) {
+  stopAllAudio();
+  if (key === 'moonlight') playLoopTrack('audio/Guiding_Light.ogg');
+  else if (key === 'starlight') playLoopTrack('audio/Curious_Light.ogg');
+  else if (key === 'paradoxical') playLayeredLoop('audio/DailyRuns-Results-Layer1.ogg', 'audio/Dailyrun-music-lame_loop.mp3');
+  else if (key === 'mischievous') playBitcrushLoop('audio/Guiding_Light.ogg');
+}
+
+function endAudioForLight(key) {
+  if (key === 'moonlight') fadeOutCurrent(() => playOnce('audio/MusicBlueOutro.mp3'));
+  else if (key === 'starlight') fadeOutCurrent(() => playOnce('audio/MusicYellowEnd.mp3'));
+  else if (key === 'paradoxical') fadeOutCurrent();
+  else if (key === 'mischievous') fadeOutBitcrush();
+}
+/* ------------- end audio engine ------------- */
+
+const lightBtns = document.querySelectorAll('.light-btn');
+function selectLight(name) {
+  selectedLight = name;
+  lightBtns.forEach(b => b.classList.toggle('selected', b.dataset.light === name));
+}
+lightBtns.forEach(btn => {
+  btn.addEventListener('click', () => selectLight(btn.dataset.light));
+});
+selectLight('moonlight');
+
+function renderMsgList() {
+  const list = document.getElementById('msg-list');
+  list.innerHTML = '';
+  messages.forEach((m, i) => {
+    const row = document.createElement('div');
+    row.className = 'msg-item';
+    const span = document.createElement('span');
+    span.textContent = (i + 1) + '. ' + m;
+    const rm = document.createElement('button');
+    rm.textContent = '✕';
+    rm.setAttribute('aria-label', 'Remove message');
+    rm.addEventListener('click', () => { messages.splice(i, 1); renderMsgList(); });
+    row.appendChild(span);
+    row.appendChild(rm);
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('add-msg').addEventListener('click', addMessage);
+document.getElementById('msg-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); addMessage(); }
+});
+
+function addMessage() {
+  const input = document.getElementById('msg-input');
+  const val = input.value.trim();
+  const err = document.getElementById('msg-error');
+  if (!val) { err.textContent = 'Enter a message first'; err.style.display = 'block'; return; }
+  err.style.display = 'none';
+  messages.push(val);
+  input.value = '';
+  renderMsgList();
+}
+
+document.getElementById('save-prefs').addEventListener('click', () => {
+  const err = document.getElementById('msg-error');
+  if (messages.length === 0) { err.textContent = 'Add at least one message before saving'; err.style.display = 'block'; return; }
+  err.style.display = 'none';
+  const data = { light: selectedLight, messages: messages };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'guiding-light-preferences.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('load-prefs').addEventListener('click', () => {
+  document.getElementById('load-input').click();
+});
+
+document.getElementById('load-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  const err = document.getElementById('msg-error');
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.light || !lightStyles[data.light] || !Array.isArray(data.messages)) {
+        throw new Error('bad shape');
+      }
+      selectLight(data.light);
+      messages = data.messages.filter(m => typeof m === 'string');
+      renderMsgList();
+      err.style.display = 'none';
+    } catch (err2) {
+      err.textContent = 'That file doesn\'t look like a valid preferences file';
+      err.style.display = 'block';
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+document.getElementById('generate').addEventListener('click', () => {
+  const err = document.getElementById('msg-error');
+  if (messages.length === 0) { err.textContent = 'Add at least one message first'; err.style.display = 'block'; return; }
+  err.style.display = 'none';
+  currentIndex = 0;
+  document.getElementById('settings-view').style.display = 'none';
+  document.getElementById('preview-view').style.display = 'block';
+  startPreview();
+});
+
+function parseMarkdown(text, accentColor) {
+  let out = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  out = out.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+  out = out.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  out = out.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  out = out.replace(/`(.+?)`/g, '<span style="color:' + accentColor + '; font-weight:500;">$1</span>');
+  return out;
+}
+
+function startPreview() {
+  const style = lightStyles[selectedLight];
+  document.getElementById('light-label').style.color = style.accent;
+  document.getElementById('light-message').style.color = style.glow;
+  document.getElementById('glow-layer').style.background =
+    'radial-gradient(circle at center, rgba(' + style.rgb + ',0.18) 0%, transparent 70%)';
+  document.getElementById('glow-layer').style.animation = 'flicker 14s ease-in-out infinite';
+
+  renderMessage(true);
+  startStatic(style);
+  startAudioForLight(selectedLight);
+}
+
+function renderMessage(skipFade) {
+  const style = lightStyles[selectedLight];
+  const labelEl = document.getElementById('light-label');
+  const msgEl = document.getElementById('light-message');
+
+  labelEl.textContent = style.name;
+
+  function applyText() {
+    msgEl.style.animation = 'none';
+    void msgEl.offsetWidth;
+    msgEl.innerHTML = parseMarkdown(messages[currentIndex], style.glow);
+    msgEl.style.animation = 'sway 7s ease-in-out infinite';
+    msgEl.classList.remove('fading');
+  }
+
+  if (skipFade) {
+    applyText();
+  } else {
+    msgEl.classList.add('fading');
+    setTimeout(() => { applyText(); }, 500);
+  }
+}
+
+function returnToSettings(withFade) {
+  stopStatic();
+  const box = document.getElementById('preview-box');
+  if (document.fullscreenElement) {
+    if (document.exitFullscreen) document.exitFullscreen();
+  }
+  if (withFade) {
+    box.style.opacity = '0';
+    setTimeout(() => {
+      document.getElementById('preview-view').style.display = 'none';
+      document.getElementById('settings-view').style.display = 'block';
+      box.style.opacity = '1';
+    }, 600);
+  } else {
+    document.getElementById('preview-view').style.display = 'none';
+    document.getElementById('settings-view').style.display = 'block';
+  }
+}
+
+document.getElementById('msg-container').addEventListener('click', (e) => {
+  if (e.target.id === 'fullscreen-btn') return;
+  if (currentIndex === messages.length - 1) {
+    document.getElementById('light-message').classList.add('fading');
+    endAudioForLight(selectedLight);
+    setTimeout(() => { returnToSettings(true); }, 500);
+  } else {
+    currentIndex++;
+    renderMessage(false);
+  }
+});
+
+document.getElementById('fullscreen-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const box = document.getElementById('preview-box');
+  if (!document.fullscreenElement) {
+    if (box.requestFullscreen) box.requestFullscreen();
+    else if (box.webkitRequestFullscreen) box.webkitRequestFullscreen();
+  } else {
+    if (document.exitFullscreen) document.exitFullscreen();
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  }
+});
+
+document.addEventListener('fullscreenchange', () => {
+  const btn = document.getElementById('fullscreen-btn');
+  btn.textContent = document.fullscreenElement ? '⛶ Exit fullscreen' : '⛶ Fullscreen';
+  setTimeout(() => { if (resizeStaticCanvas) resizeStaticCanvas(); }, 100);
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Backspace' && document.getElementById('preview-view').style.display !== 'none') {
+    e.preventDefault();
+    stopAllAudio();
+    returnToSettings(false);
+  }
+});
+
+function startStatic(style) {
+  const canvas = document.getElementById('static-canvas');
+  const ctx = canvas.getContext('2d');
+  function resize() {
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+  }
+  resizeStaticCanvas = resize;
+  resize();
+  window.addEventListener('resize', resize);
+  function draw() {
+    ctx.fillStyle = '#060608';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const count = Math.floor((canvas.width * canvas.height) / 2200);
+    for (let i = 0; i < count; i++) {
+      const x = Math.random() * canvas.width;
+      const y = Math.random() * canvas.height;
+      const a = Math.random() * 0.12;
+      ctx.fillStyle = 'rgba(' + style.rgb + ',' + a + ')';
+      ctx.fillRect(x, y, 1.5, 1.5);
+    }
+    staticAnimId = requestAnimationFrame(draw);
+  }
+  draw();
+}
+function stopStatic() {
+  if (staticAnimId) cancelAnimationFrame(staticAnimId);
+}
+</script>
+</body>
+</html>

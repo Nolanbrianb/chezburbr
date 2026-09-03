@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MUZIX LAB — v0.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0b0913;
+  --ink-2:#12101f;
+  --ink-3:#191630;
+  --line:#2a2450;
+  --sig:#ff3d81;        /* signal magenta */
+  --wave:#3dffe0;       /* oscilloscope cyan */
+  --warm:#ffb03d;       /* warn amber */
+  --bad:#ff5c5c;
+  --txt:#ddd8f5;
+  --dim:#7b74a8;
+  --dimmer:#4a4470;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--ink);
+  color:var(--txt);
+  font-family:'Chakra Petch',system-ui,sans-serif;
+  overflow:hidden;
+}
+button,input,textarea,select{font-family:inherit;color:inherit}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#2c2652;border-radius:6px}
+::-webkit-scrollbar-thumb:hover{background:#3d3570}
+
+/* ── shell ───────────────────────────────────────────────── */
+.app{height:100vh;display:flex;flex-direction:column;background:var(--ink)}
+
+/* ── SIGNATURE: the header IS the oscilloscope ───────────── */
+.scope-bar{
+  position:relative;height:76px;flex-shrink:0;
+  background:linear-gradient(180deg,#0d0b18 0%,#0b0913 100%);
+  border-bottom:1px solid var(--line);overflow:hidden;
+}
+#scope{position:absolute;inset:0;width:100%;height:100%;display:block}
+.brand{
+  position:absolute;left:20px;top:50%;transform:translateY(-50%);
+  display:flex;align-items:baseline;gap:10px;pointer-events:none;
+  text-shadow:0 0 24px var(--ink),0 0 12px var(--ink);
+}
+.brand h1{
+  font-size:27px;font-weight:700;letter-spacing:7px;
+  color:var(--txt);line-height:1;
+}
+.brand h1 em{font-style:normal;color:var(--sig)}
+.brand .ver{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;
+  color:var(--dimmer);
+}
+.brand .sub{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2.5px;
+  color:var(--dim);text-transform:uppercase;
+}
+.scope-right{
+  position:absolute;right:20px;top:50%;transform:translateY(-50%);
+  display:flex;align-items:center;gap:14px;
+}
+.hz-read{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--wave);
+  letter-spacing:1px;min-width:96px;text-align:right;
+  text-shadow:0 0 10px #3dffe055;
+}
+.hz-read small{color:var(--dimmer);text-shadow:none}
+
+/* ── toolbar ─────────────────────────────────────────────── */
+.toolbar{
+  display:flex;align-items:center;gap:8px;padding:8px 16px;
+  background:var(--ink-2);border-bottom:1px solid var(--line);flex-shrink:0;
+  flex-wrap:wrap;
+}
+.btn{
+  background:transparent;border:1px solid var(--line);color:var(--dim);
+  padding:5px 13px;border-radius:5px;font-size:13px;font-weight:600;
+  letter-spacing:1px;text-transform:uppercase;cursor:pointer;
+  transition:.12s border-color,.12s color,.12s background;
+}
+.btn:hover{color:var(--txt);border-color:#453d80}
+.btn:focus-visible{outline:2px solid var(--wave);outline-offset:2px}
+.btn.run{background:var(--sig);border-color:var(--sig);color:#180010}
+.btn.run:hover{background:#ff5f97;border-color:#ff5f97;color:#180010}
+.btn.stop{border-color:#5a2038;color:#ff9ab8}
+.btn.stop:hover{background:#3a0f22;color:#ffc4d6;border-color:#8a3055}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.tool-sep{width:1px;height:22px;background:var(--line);margin:0 4px}
+.tool-lbl{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--dimmer);
+  letter-spacing:1.5px;text-transform:uppercase;
+}
+select.pick{
+  background:var(--ink-3);border:1px solid var(--line);border-radius:5px;
+  padding:5px 8px;font-size:12px;letter-spacing:.5px;cursor:pointer;
+}
+input[type=range]{accent-color:var(--sig);width:88px;cursor:pointer}
+.num{
+  background:var(--ink-3);border:1px solid var(--line);border-radius:5px;
+  width:56px;padding:4px 7px;font-family:'IBM Plex Mono',monospace;font-size:12px;
+}
+.spacer{margin-left:auto}
+
+/* ── file tabs ───────────────────────────────────────────── */
+.filebar{
+  display:flex;align-items:stretch;gap:2px;padding:0 12px;
+  background:var(--ink-2);border-bottom:1px solid var(--line);
+  min-height:31px;overflow-x:auto;flex-shrink:0;
+}
+.ftab{
+  display:flex;align-items:center;gap:7px;padding:5px 12px;cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dimmer);
+  border-radius:5px 5px 0 0;white-space:nowrap;transition:.12s;
+}
+.ftab:hover{color:var(--txt);background:var(--ink-3)}
+.ftab.on{color:var(--sig);background:var(--ink);box-shadow:inset 0 -2px 0 var(--sig)}
+.ftab .x{color:var(--dimmer);font-size:11px;padding:0 3px;border-radius:3px}
+.ftab .x:hover{color:#ff9ab8;background:#ff3d8122}
+.fadd{
+  align-self:center;margin-left:6px;padding:3px 9px;border:1px dashed var(--line);
+  border-radius:4px;font-size:10px;letter-spacing:1px;text-transform:uppercase;
+  color:var(--dimmer);cursor:pointer;flex-shrink:0;transition:.12s;
+}
+.fadd:hover{color:var(--sig);border-color:#5a3d70}
+
+/* ── main split ──────────────────────────────────────────── */
+.main{flex:1;display:flex;min-height:0}
+.editor-col{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+.edit-wrap{flex:1;display:flex;min-height:0;position:relative;background:#0a0812}
+.gutter{
+  padding:16px 10px 16px 16px;font-family:'IBM Plex Mono',monospace;
+  font-size:13px;line-height:1.7;text-align:right;color:#38315e;
+  user-select:none;white-space:pre;overflow:hidden;flex-shrink:0;min-width:44px;
+  border-right:1px solid #191436;
+}
+.gutter b{color:var(--sig);font-weight:400}
+#code{
+  flex:1;background:transparent;border:0;outline:0;resize:none;
+  font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.7;
+  padding:16px 18px;color:#cfc8ee;caret-color:var(--sig);tab-size:2;
+  white-space:pre;overflow:auto;
+}
+#code::selection{background:#ff3d8140}
+.drop{
+  position:absolute;inset:12px;border:2px dashed #5a3d70;border-radius:8px;
+  background:#0a0812f0;display:none;align-items:center;justify-content:center;
+  flex-direction:column;gap:6px;z-index:20;pointer-events:none;
+}
+.drop.on{display:flex}
+.drop .big{font-size:26px}
+.drop .l1{font-size:15px;font-weight:600;letter-spacing:1px;color:var(--sig)}
+.drop .l2{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim)}
+
+/* ── right rail ──────────────────────────────────────────── */
+.rail{
+  width:322px;flex-shrink:0;display:flex;flex-direction:column;
+  background:var(--ink-2);border-left:1px solid var(--line);min-height:0;
+}
+.rail-h{
+  padding:6px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;
+  letter-spacing:2px;text-transform:uppercase;color:var(--dimmer);
+  border-bottom:1px solid var(--line);display:flex;align-items:center;
+  justify-content:space-between;gap:8px;flex-shrink:0;background:#100e1c;
+}
+.rail-h .tag{color:var(--wave);letter-spacing:1px}
+#console{
+  flex:1;overflow-y:auto;padding:10px 14px;
+  font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.75;
+  min-height:0;
+}
+#console .row{display:flex;gap:8px;padding:1px 0}
+#console .ln{color:#3a3462;flex-shrink:0;min-width:22px;text-align:right}
+#console .tx{white-space:pre-wrap;word-break:break-word}
+.c-note{color:var(--wave)}
+.c-say{color:#e6dfff}
+.c-sys{color:var(--dimmer)}
+.c-err{color:var(--bad)}
+.c-warn{color:var(--warm)}
+.c-egg{color:var(--sig)}
+.c-ok{color:#7dff9e}
+
+#bars{width:100%;height:92px;display:block;background:#0a0812;flex-shrink:0}
+.nowplay{
+  padding:8px 14px 10px;flex-shrink:0;border-top:1px solid var(--line);
+  font-family:'IBM Plex Mono',monospace;font-size:11px;min-height:62px;
+}
+.np-empty{color:#38315e}
+.voice{
+  display:flex;align-items:center;gap:8px;padding:2px 0;
+}
+.voice .dot{width:6px;height:6px;border-radius:50%;background:var(--sig);flex-shrink:0;
+  box-shadow:0 0 8px var(--sig);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.voice .w{color:var(--wave);min-width:62px}
+.voice .f{color:var(--txt);flex:1}
+.voice .g{color:var(--dimmer)}
+
+/* ── status ──────────────────────────────────────────────── */
+.status{
+  display:flex;align-items:center;gap:18px;padding:4px 16px;flex-shrink:0;
+  background:var(--sig);color:#1a0010;
+  font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;
+}
+.status.idle{background:var(--ink-3);color:var(--dim)}
+.status .r{margin-left:auto}
+
+/* ── guide modal ─────────────────────────────────────────── */
+.veil{
+  position:fixed;inset:0;background:#05040acc;backdrop-filter:blur(3px);
+  display:none;align-items:flex-start;justify-content:center;padding:28px 20px;
+  z-index:400;overflow-y:auto;
+}
+.veil.on{display:flex}
+.modal{
+  background:var(--ink-2);border:1px solid var(--line);border-radius:10px;
+  width:100%;max-width:760px;display:flex;flex-direction:column;
+  max-height:calc(100vh - 56px);overflow:hidden;
+}
+.modal-h{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:13px 20px;background:#100e1c;border-bottom:1px solid var(--line);flex-shrink:0;
+}
+.modal-h .t{font-size:16px;font-weight:600;letter-spacing:2px}
+.modal-h .t em{font-style:normal;color:var(--sig)}
+.modal-h .c{cursor:pointer;color:var(--dim);font-size:19px;padding:0 6px;border-radius:4px}
+.modal-h .c:hover{color:var(--sig)}
+.modal-b{padding:18px 20px 26px;overflow-y:auto}
+.g-sec{margin-bottom:24px}
+.g-h{
+  font-size:12px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--sig);padding-bottom:5px;margin-bottom:10px;border-bottom:1px solid var(--line);
+}
+.g-p{font-size:14px;line-height:1.65;color:#c3bce0;margin-bottom:10px}
+.g-p code,.ic{
+  font-family:'IBM Plex Mono',monospace;font-size:12px;background:#0a0812;
+  border:1px solid #241f45;border-radius:3px;padding:1px 5px;color:var(--wave);
+}
+pre.g-code{
+  font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.75;
+  background:#0a0812;border:1px solid #241f45;border-left:2px solid var(--sig);
+  border-radius:5px;padding:11px 13px;color:#cfc8ee;overflow-x:auto;margin-bottom:10px;
+  white-space:pre;
+}
+pre.g-code .cm{color:#524b7d}
+table.g-t{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:10px}
+table.g-t td{padding:5px 9px;border-bottom:1px solid #201b40;vertical-align:top}
+table.g-t td:first-child{
+  font-family:'IBM Plex Mono',monospace;color:var(--wave);white-space:nowrap;width:1%;
+}
+table.g-t td:last-child{color:#a79fd0;line-height:1.5}
+.pillrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.pill{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;padding:3px 9px;
+  border:1px solid #241f45;border-radius:20px;color:var(--wave);background:#0a0812;
+}
+.callout{
+  border:1px solid #3a2a55;border-left:3px solid var(--warm);border-radius:5px;
+  padding:10px 13px;font-size:13px;line-height:1.6;color:#c3bce0;margin-bottom:10px;
+  background:#150f22;
+}
+
+@media (max-width:900px){
+  .rail{width:250px}
+  .brand h1{font-size:20px;letter-spacing:4px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ══ SIGNATURE: live oscilloscope header ══ -->
+  <div class="scope-bar">
+    <canvas id="scope"></canvas>
+    <div class="brand">
+      <h1>MU<em>Z</em>IX</h1>
+      <span class="sub">lab</span>
+      <span class="ver">v0.1</span>
+    </div>
+    <div class="scope-right">
+      <div class="hz-read" id="hzread"><small>idle</small></div>
+    </div>
+  </div>
+
+  <!-- ══ toolbar ══ -->
+  <div class="toolbar">
+    <button class="btn run" id="btnRun">&#9654; Run</button>
+    <button class="btn stop" id="btnStop" disabled>&#9632; Stop</button>
+    <div class="tool-sep"></div>
+    <span class="tool-lbl">Example</span>
+    <select class="pick" id="exPick">
+      <option value="">— load —</option>
+    </select>
+    <div class="tool-sep"></div>
+    <span class="tool-lbl">Tempo</span>
+    <input class="num" id="tempoBox" type="number" value="120" min="20" max="400" step="1">
+    <span class="tool-lbl">Vol</span>
+    <input type="range" id="volSlide" min="0" max="100" value="70">
+    <div class="spacer"></div>
+    <button class="btn" id="btnSave">Save .muzix</button>
+    <button class="btn" id="btnGuide">Guide</button>
+  </div>
+
+  <!-- ══ file tabs ══ -->
+  <div class="filebar" id="filebar"></div>
+
+  <!-- ══ main ══ -->
+  <div class="main">
+    <div class="editor-col">
+      <div class="edit-wrap" id="editWrap">
+        <div class="drop" id="dropZone">
+          <div class="big">&#9835;</div>
+          <div class="l1">Drop a track in</div>
+          <div class="l2">.muzix &middot; .txt</div>
+        </div>
+        <div class="gutter" id="gutter">1</div>
+        <textarea id="code" spellcheck="false" autocomplete="off"></textarea>
+      </div>
+    </div>
+
+    <div class="rail">
+      <div class="rail-h"><span>Console</span><span class="tag" id="conTag">ready</span></div>
+      <div id="console"></div>
+      <div class="rail-h"><span>Spectrum</span></div>
+      <canvas id="bars"></canvas>
+      <div class="rail-h"><span>Voices</span><span class="tag" id="vCount">0</span></div>
+      <div class="nowplay" id="nowplay"><span class="np-empty">nothing playing</span></div>
+    </div>
+  </div>
+
+  <div class="status idle" id="status">
+    <span id="stState">Idle</span>
+    <span id="stMsg">Press Run to play</span>
+    <span class="r" id="stFile">untitled.muzix</span>
+  </div>
+</div>
+
+<!-- ══ Guide ══ -->
+<div class="veil" id="guideVeil">
+  <div class="modal">
+    <div class="modal-h">
+      <span class="t">MU<em>Z</em>IX &mdash; User Guide</span>
+      <span class="c" id="guideClose">&#10005;</span>
+    </div>
+    <div class="modal-b" id="guideBody"></div>
+  </div>
+</div>
+
+<input type="file" id="fileIn" accept=".muzix,.txt" style="display:none">
+
+<script>
+"use strict";
+
+/* ════════════════════════════════════════════════════════════
+   MUZIX — a tiny language for making noise on purpose.
+   Written for Chezburbr. Single file, no build step, no mercy.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── 1. AUDIO ENGINE ─────────────────────────────────────── */
+let ctx=null, master=null, analyser=null, noiseBuf=null;
+const customWaves={};
+let activeNodes=new Set();
+let liveVoices=[];
+
+function audio(){
+  if(ctx) return ctx;
+  ctx=new (window.AudioContext||window.webkitAudioContext)();
+  master=ctx.createGain();
+  master.gain.value=parseInt(volSlide.value,10)/100;
+  analyser=ctx.createAnalyser();
+  analyser.fftSize=2048;
+  analyser.smoothingTimeConstant=0.75;
+  master.connect(analyser);
+  analyser.connect(ctx.destination);
+
+  // white noise buffer (2s, reused)
+  const n=ctx.sampleRate*2;
+  noiseBuf=ctx.createBuffer(1,n,ctx.sampleRate);
+  const d=noiseBuf.getChannelData(0);
+  for(let i=0;i<n;i++) d[i]=Math.random()*2-1;
+
+  // periodic waves
+  customWaves.organ=mkWave([0,1,0,0.55,0,0.32,0,0.2,0,0.12]);
+  customWaves.chip =mkWave([0,1,0.62,0.42,0.3,0.22,0.16,0.12,0.09,0.07,0.05]);
+  customWaves.bell =mkWave([0,1,0,0,0.42,0,0,0.28,0,0,0.14]);
+  return ctx;
+}
+function mkWave(harm){
+  const real=new Float32Array(harm.length);
+  const imag=new Float32Array(harm);
+  return ctx.createPeriodicWave(real,imag,{disableNormalization:false});
+}
+
+const WAVES=['sine','square','triangle','sawtooth','noise','organ','chip','bell'];
+const WAVE_ALIAS={tri:'triangle',saw:'sawtooth',sq:'square',sin:'sine',
+                  pulse:'square',white:'noise',hiss:'noise'};
+function normWave(w){
+  w=String(w).toLowerCase();
+  if(WAVE_ALIAS[w]) w=WAVE_ALIAS[w];
+  return WAVES.includes(w)?w:null;
+}
+
+/** Schedule one voice. Returns its duration in seconds. */
+function fire(wave,freq,dur,gain){
+  audio();
+  if(ctx.state==='suspended') ctx.resume();
+  dur=Math.max(0.01,Math.min(dur,120));
+  gain=Math.max(0,Math.min(gain,1));
+  const t0=ctx.currentTime+0.005;
+  const g=ctx.createGain();
+  const atk=Math.min(0.012,dur*0.2);
+  const rel=Math.min(0.06,dur*0.3);
+  g.gain.setValueAtTime(0.0001,t0);
+  g.gain.exponentialRampToValueAtTime(Math.max(gain,0.0002),t0+atk);
+  g.gain.setValueAtTime(Math.max(gain,0.0002),t0+dur-rel);
+  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  g.connect(master);
+
+  let src;
+  if(wave==='noise'){
+    src=ctx.createBufferSource();
+    src.buffer=noiseBuf; src.loop=true;
+    if(freq&&freq>20){                 // pitched noise -> bandpass
+      const bp=ctx.createBiquadFilter();
+      bp.type='bandpass'; bp.frequency.value=freq; bp.Q.value=6;
+      src.connect(bp); bp.connect(g);
+    } else src.connect(g);
+  }else{
+    src=ctx.createOscillator();
+    if(customWaves[wave]) src.setPeriodicWave(customWaves[wave]);
+    else src.type=wave;
+    src.frequency.setValueAtTime(freq,t0);
+    src.connect(g);
+  }
+  src.start(t0);
+  src.stop(t0+dur+0.02);
+  activeNodes.add(src);
+  src.onended=()=>{activeNodes.delete(src);try{g.disconnect();}catch(e){}};
+  return dur;
+}
+
+/** Glide from f1 to f2 over dur. */
+function fireSweep(wave,f1,f2,dur,gain){
+  audio();
+  if(ctx.state==='suspended') ctx.resume();
+  dur=Math.max(0.02,Math.min(dur,120));
+  gain=Math.max(0,Math.min(gain,1));
+  const t0=ctx.currentTime+0.005;
+  const g=ctx.createGain();
+  g.gain.setValueAtTime(0.0001,t0);
+  g.gain.exponentialRampToValueAtTime(Math.max(gain,0.0002),t0+0.015);
+  g.gain.setValueAtTime(Math.max(gain,0.0002),t0+dur-0.05);
+  g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  g.connect(master);
+  const src=ctx.createOscillator();
+  if(customWaves[wave]) src.setPeriodicWave(customWaves[wave]);
+  else src.type=(wave==='noise'?'sawtooth':wave);
+  src.frequency.setValueAtTime(Math.max(1,f1),t0);
+  src.frequency.exponentialRampToValueAtTime(Math.max(1,f2),t0+dur);
+  src.connect(g); src.start(t0); src.stop(t0+dur+0.02);
+  activeNodes.add(src);
+  src.onended=()=>{activeNodes.delete(src);try{g.disconnect();}catch(e){}};
+  return dur;
+}
+
+function killAll(){
+  activeNodes.forEach(n=>{try{n.stop();}catch(e){}});
+  activeNodes.clear();
+  liveVoices=[]; renderVoices();
+}
+
+/* ── 2. NOTES & UNITS ────────────────────────────────────── */
+const SEMI={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+function noteToHz(s){
+  const m=/^([A-Ga-g])([#b]?)(-?\d{1,2})$/.exec(String(s));
+  if(!m) return null;
+  let semi=SEMI[m[1].toUpperCase()];
+  if(m[2]==='#') semi++;
+  if(m[2]==='b') semi--;
+  const midi=(parseInt(m[3],10)+1)*12+semi;
+  if(midi<0||midi>140) return null;
+  return 440*Math.pow(2,(midi-69)/12);
+}
+function hzToNote(hz){
+  if(!hz||hz<=0) return '';
+  const midi=Math.round(69+12*Math.log2(hz/440));
+  const names=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  return names[((midi%12)+12)%12]+(Math.floor(midi/12)-1);
+}
+
+/* ── 3. EXPRESSION EVALUATOR ─────────────────────────────── */
+/* Precedence-climbing parser: numbers, notes, vars, + - * / %, (), random(a,b) */
+function evalExpr(src,env,ln){
+  const toks=[]; let i=0;
+  const s=String(src);
+  while(i<s.length){
+    const c=s[i];
+    if(/\s/.test(c)){i++;continue;}
+    if('+-*/%(),'.includes(c)){toks.push(c);i++;continue;}
+    let j=i;
+    while(j<s.length && !/[\s+\-*/%(),]/.test(s[j])) j++;
+    toks.push(s.slice(i,j)); i=j;
+  }
+  let p=0;
+  const peek=()=>toks[p];
+  const eat=()=>toks[p++];
+
+  function atom(){
+    const t=eat();
+    if(t===undefined) throw new MzErr(ln,'expression just... ends. Where\'s the rest of it?');
+    if(t==='(' ){const v=expr(0); if(peek()!==')') throw new MzErr(ln,'missing a closing )'); eat(); return v;}
+    if(t==='-') return -atom();
+    if(t==='+') return atom();
+    if(/^-?\d*\.?\d+$/.test(t)) return parseFloat(t);
+    if(t.toLowerCase()==='random'&&peek()==='('){
+      eat(); const a=expr(0);
+      if(peek()===',') eat();
+      const b=expr(0);
+      if(peek()===')') eat();
+      const lo=Math.min(a,b),hi=Math.max(a,b);
+      return Math.floor(Math.random()*(hi-lo+1))+lo;
+    }
+    if(Object.prototype.hasOwnProperty.call(env,t)) return env[t];
+    const nf=noteToHz(t);
+    if(nf!==null) return nf;
+    if(t==='true') return 1;
+    if(t==='false') return 0;
+    throw new MzErr(ln,`"${t}" means nothing to me. Typo, or did you forget to set it?`);
+  }
+  const PREC={'+':1,'-':1,'*':2,'/':2,'%':2};
+  function expr(min){
+    let left=atom();
+    while(peek() in PREC && PREC[peek()]>=min){
+      const op=eat();
+      const right=expr(PREC[op]+1);
+      left = op==='+'?left+right : op==='-'?left-right
+           : op==='*'?left*right : op==='/'?(right===0?(()=>{throw new MzErr(ln,'divided by zero. Bold. No.');})():left/right)
+           : left%right;
+    }
+    return left;
+  }
+  const out=expr(0);
+  if(p<toks.length) throw new MzErr(ln,`leftover junk in expression: "${toks.slice(p).join(' ')}"`);
+  return out;
+}
+
+class MzErr extends Error{
+  constructor(line,msg){super(msg);this.line=line;}
+}
+
+/* Split respecting parens — keeps "(x + 100)" as one token */
+function splitArgs(s){
+  const out=[]; let depth=0,cur='';
+  for(const c of s){
+    if(c==='(') depth++;
+    if(c===')') depth--;
+    if(/\s/.test(c)&&depth===0){ if(cur){out.push(cur);cur='';} continue; }
+    cur+=c;
+  }
+  if(cur) out.push(cur);
+  return out;
+}
+function splitCommas(s){
+  const out=[]; let depth=0,cur='';
+  for(const c of s){
+    if(c==='(') depth++;
+    if(c===')') depth--;
+    if(c===','&&depth===0){ out.push(cur); cur=''; continue; }
+    cur+=c;
+  }
+  out.push(cur);
+  return out.map(x=>x.trim()).filter(Boolean);
+}
+
+/* duration token -> seconds */
+function parseDur(tok,env,ln,tempo){
+  const m=/^(.+?)(ms|s|b)$/i.exec(tok);
+  if(m){
+    const v=evalExpr(m[1],env,ln);
+    const u=m[2].toLowerCase();
+    if(u==='ms') return v/1000;
+    if(u==='s')  return v;
+    return v*(60/tempo);          // beats
+  }
+  return evalExpr(tok,env,ln);    // bare number = seconds
+}
+function looksLikeDur(tok){ return /(ms|s|b)$/i.test(tok)&&!noteToHz(tok); }
+
+/* pitch token -> Hz */
+function parsePitch(tok,env,ln){
+  if(Object.prototype.hasOwnProperty.call(env,tok)) return env[tok];
+  const n=noteToHz(tok);
+  if(n!==null) return n;
+  return evalExpr(tok,env,ln);
+}
+
+/* ── 4. PARSER (indentation -> tree) ─────────────────────── */
+const BLOCK_HEADS=/^(loop|repeat|if|else|def|function|forever)\b/;
+
+function parse(src){
+  const raw=src.split('\n');
+  const lines=[];
+  raw.forEach((text,idx)=>{
+    const noTabs=text.replace(/\t/g,'  ');
+    const stripped=noTabs.replace(/\s+$/,'');
+    const body=stripped.trim();
+    if(!body) return;
+    if(body.startsWith('#')||body.startsWith('//')) return;
+    if(/^<!?\s*DOCTYPE\s+muzix\s*>?$/i.test(body)) return;
+    if(body==='end') { lines.push({indent:-1,body:'end',ln:idx+1}); return; }
+    lines.push({indent:stripped.length-stripped.trimStart().length, body, ln:idx+1});
+  });
+
+  let p=0;
+  function block(minIndent){
+    const nodes=[];
+    while(p<lines.length){
+      const L=lines[p];
+      if(L.body==='end'){ p++; break; }          // optional explicit end
+      if(L.indent<minIndent) break;
+      p++;
+      const head=BLOCK_HEADS.exec(L.body);
+      if(head){
+        const kw=head[1];
+        const rest=L.body.slice(head[0].length).trim();
+        if(kw==='else'){ nodes.push({t:'else',ln:L.ln}); continue; }
+        const body=block(L.indent+1);
+        if(kw==='if'){
+          let alt=null;
+          if(p<lines.length && lines[p].indent===L.indent && /^else\b/.test(lines[p].body)){
+            const eLn=lines[p]; p++;
+            alt=block(eLn.indent+1);
+          }
+          nodes.push({t:'if',cond:rest,body,alt,ln:L.ln});
+        }else if(kw==='def'||kw==='function'){
+          nodes.push({t:'def',name:rest.split(/\s+/)[0],body,ln:L.ln});
+        }else if(kw==='forever'){
+          nodes.push({t:'loop',count:'__forever__',body,ln:L.ln});
+        }else{
+          nodes.push({t:'loop',count:rest||'1',body,ln:L.ln});
+        }
+      }else{
+        nodes.push({t:'cmd',body:L.body,ln:L.ln});
+      }
+    }
+    return nodes;
+  }
+  const tree=block(0);
+  return tree;
+}
+
+/* ── 5. INTERPRETER ──────────────────────────────────────── */
+let RUN={stop:true,tempo:120,defWave:'sine',defGain:0.7,defDur:1,steps:0};
+
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function nap(sec){
+  const end=performance.now()+sec*1000;
+  while(performance.now()<end){
+    if(RUN.stop) return;
+    await sleep(Math.min(24,end-performance.now()));
+  }
+}
+
+async function runTree(nodes,env,fns,depth){
+  if(depth>40) throw new MzErr(0,'nesting went 40 deep. Take a breath.');
+  for(const n of nodes){
+    if(RUN.stop) return;
+    if(RUN.__break) return;
+    if(n.t==='cmd'){ await runCmd(n,env,fns,depth); }
+    else if(n.t==='def'){ fns[n.name]=n.body; }
+    else if(n.t==='if'){
+      const ok=testCond(n.cond,env,n.ln);
+      await runTree(ok?n.body:(n.alt||[]),env,fns,depth+1);
+    }
+    else if(n.t==='loop'){
+      let count;
+      if(n.count==='__forever__') count=Infinity;
+      else count=Math.floor(evalExpr(n.count,env,n.ln));
+      if(!isFinite(count)&&n.count!=='__forever__') count=0;
+      if(count<0) count=0;
+      if(count>100000) count=100000;
+      for(let k=0;k<count;k++){
+        if(RUN.stop) return;
+        env.i=k; env.n=k+1;
+        await runTree(n.body,env,fns,depth+1);
+        if(RUN.__break){RUN.__break=false;break;}
+        if((k&63)===63) await sleep(0);   // let the tab breathe on silent loops
+      }
+    }
+    else if(n.t==='else'){ /* stray else — ignore */ }
+  }
+}
+
+function testCond(src,env,ln){
+  const m=/^(.+?)\s*(==|!=|>=|<=|>|<)\s*(.+)$/.exec(src.trim());
+  if(!m) return !!evalExpr(src,env,ln);
+  const a=evalExpr(m[1],env,ln), b=evalExpr(m[3],env,ln);
+  switch(m[2]){
+    case '==':return a===b; case '!=':return a!==b;
+    case '>': return a>b;   case '<': return a<b;
+    case '>=':return a>=b;  default:  return a<=b;
+  }
+}
+
+/* Parse one "voice" spec: [wave] pitch [dur] [gain] */
+function readVoice(part,env,ln){
+  const tk=splitArgs(part);
+  if(!tk.length) throw new MzErr(ln,'a voice with no arguments is just silence with extra steps');
+  let wave=RUN.defWave;
+  const w=normWave(tk[0]);
+  if(w){ wave=w; tk.shift(); }
+  else if(/^[A-Za-z]+$/.test(tk[0]) && !Object.prototype.hasOwnProperty.call(env,tk[0]))
+    throw new MzErr(ln,`"${tk[0]}" isn't a waveform. Pick one: ${WAVES.join(', ')}`);
+  let freq=null;
+  if(wave==='noise'){
+    if(tk.length && !looksLikeDur(tk[0])){ freq=parsePitch(tk.shift(),env,ln); }
+  }else{
+    if(!tk.length) throw new MzErr(ln,'missing a pitch — give me a number (440) or a note (A4)');
+    freq=parsePitch(tk.shift(),env,ln);
+  }
+  let dur=RUN.defDur;
+  if(tk.length){ dur=parseDur(tk.shift(),env,ln,RUN.tempo); }
+  let gain=RUN.defGain;
+  if(tk.length){ gain=evalExpr(tk.shift(),env,ln); }
+  if(tk.length) throw new MzErr(ln,`too many arguments — I stopped understanding at "${tk[0]}"`);
+  return {wave,freq,dur,gain};
+}
+
+async function playChord(argstr,env,ln,blocking){
+  const parts=splitCommas(argstr);
+  const vs=parts.map(p=>readVoice(p,env,ln));
+  let longest=0;
+  vs.forEach(v=>{ fire(v.wave,v.freq,v.dur,v.gain); longest=Math.max(longest,v.dur); });
+  vs.forEach(v=>addVoice(v,ln));
+  if(vs.length===1) log(`${vs[0].wave} ${fmtHz(vs[0].freq)} ${fmtSec(vs[0].dur)}`,'c-note',ln);
+  else log(`chord ×${vs.length} → ${vs.map(v=>fmtHz(v.freq)).join(' ')}`,'c-note',ln);
+  if(blocking) await nap(longest);
+  return longest;
+}
+
+async function runCmd(node,env,fns,depth){
+  const line=node.body;
+  const ln=node.ln;
+  const sp=line.indexOf(' ');
+  const kw=(sp===-1?line:line.slice(0,sp)).toLowerCase();
+  const rest=(sp===-1?'':line.slice(sp+1)).trim();
+
+  /* assignment: x = ... */
+  const asg=/^([A-Za-z_][A-Za-z0-9_]*)\s*=(?![=<>])\s*(.+)$/.exec(line);
+  if(asg){
+    env[asg[1]]=evalExpr(asg[2],env,ln);
+    log(`${asg[1]} = ${round(env[asg[1]])}`,'c-sys',ln);
+    return;
+  }
+
+  switch(kw){
+    case 'play': case 'playsound': case 'p':
+      await playChord(rest,env,ln,true); return;
+
+    case 'drop': case 'layer':
+      await playChord(rest,env,ln,false); return;
+
+    case 'sweep': case 'slide': {
+      const tk=splitArgs(rest);
+      let wave=RUN.defWave;
+      const w=normWave(tk[0]); if(w){wave=w;tk.shift();}
+      if(tk.length<2) throw new MzErr(ln,'sweep needs a start and an end pitch');
+      const f1=parsePitch(tk.shift(),env,ln);
+      const f2=parsePitch(tk.shift(),env,ln);
+      const dur=tk.length?parseDur(tk.shift(),env,ln,RUN.tempo):RUN.defDur;
+      const g=tk.length?evalExpr(tk.shift(),env,ln):RUN.defGain;
+      fireSweep(wave,f1,f2,dur,g);
+      addVoice({wave,freq:f1,dur,gain:g},ln);
+      log(`sweep ${fmtHz(f1)} → ${fmtHz(f2)} ${fmtSec(dur)}`,'c-note',ln);
+      await nap(dur); return;
+    }
+
+    case 'rest': case 'wait': case 'silence': case 'pause': {
+      const d=rest?parseDur(splitArgs(rest)[0],env,ln,RUN.tempo):RUN.defDur;
+      log(`rest ${fmtSec(d)}`,'c-sys',ln);
+      await nap(d); return;
+    }
+
+    case 'tempo': {
+      RUN.tempo=Math.max(20,Math.min(400,evalExpr(rest,env,ln)));
+      tempoBox.value=Math.round(RUN.tempo);
+      log(`tempo ${Math.round(RUN.tempo)} bpm`,'c-sys',ln); return;
+    }
+    case 'wave': case 'default': {
+      const w=normWave(splitArgs(rest)[0]);
+      if(!w) throw new MzErr(ln,`"${rest}" is not a wave I know. Try: ${WAVES.join(', ')}`);
+      RUN.defWave=w; log(`default wave → ${w}`,'c-sys',ln); return;
+    }
+    case 'gain': {
+      RUN.defGain=Math.max(0,Math.min(1,evalExpr(rest,env,ln)));
+      log(`default gain → ${round(RUN.defGain)}`,'c-sys',ln); return;
+    }
+    case 'length': {
+      RUN.defDur=parseDur(splitArgs(rest)[0],env,ln,RUN.tempo);
+      log(`default length → ${fmtSec(RUN.defDur)}`,'c-sys',ln); return;
+    }
+    case 'volume': case 'master': {
+      const v=Math.max(0,Math.min(1,evalExpr(rest,env,ln)));
+      audio(); master.gain.setTargetAtTime(v,ctx.currentTime,0.02);
+      volSlide.value=Math.round(v*100);
+      log(`master volume → ${round(v)}`,'c-sys',ln); return;
+    }
+
+    case 'say': case 'log': case 'print': {
+      let out;
+      const q=/^"([^"]*)"$/.exec(rest);
+      if(q) out=q[1];
+      else { try{ out=round(evalExpr(rest,env,ln)); }catch(e){ out=rest; } }
+      log(String(out),'c-say',ln); return;
+    }
+
+    case 'stop': case 'silence!': killAll(); log('all voices cut','c-warn',ln); return;
+    case 'clear': con.innerHTML=''; return;
+    case 'exit': case 'quit': RUN.stop=true; log('script ended early','c-warn',ln); return;
+    case 'break': RUN.__break=true; return;
+
+    case 'call': case 'run': {
+      const name=splitArgs(rest)[0];
+      if(!fns[name]) throw new MzErr(ln,`there is no "${name}". Did you define it above?`);
+      log(`call ${name}`,'c-sys',ln);
+      await runTree(fns[name],env,fns,depth+1); return;
+    }
+  }
+
+  /* easter eggs & extras */
+  if(await eggs(kw,rest,env,ln)) return;
+
+  throw new MzErr(ln,`"${kw}" isn't in the setlist. Check the Guide (or spell it right).`);
+}
+
+/* ── 6. EASTER EGGS ──────────────────────────────────────── */
+const EGG_LIST=['chez','luna','bruh','airhorn','vibecheck','hackerman',
+                'odetojoy','twinkle','scales','siren','coin','eggs'];
+
+async function melody(seq,wave,noteLen,gain){
+  for(const step of seq){
+    if(RUN.stop) return;
+    const beat=(60/RUN.tempo)*noteLen;
+    if(step===null){ await nap(beat); continue; }
+    const [note,mult]=Array.isArray(step)?step:[step,1];
+    const hz=noteToHz(note);
+    fire(wave,hz,beat*mult*0.94,gain);
+    addVoice({wave,freq:hz,dur:beat*mult,gain},0);
+    await nap(beat*mult);
+  }
+}
+
+async function eggs(kw,rest,env,ln){
+  switch(kw){
+    case 'eggs':
+      log('hidden commands: '+EGG_LIST.join(', '),'c-egg',ln);
+      log('(there may be more. keep typing weird words.)','c-sys',ln);
+      return true;
+
+    case 'chez': {
+      log('🍔 CHEZBURBR STUDIOS','c-egg',ln);
+      log('(and Claude ☀)','c-sys',ln);
+      await melody(['C4','E4','G4','C5',null,'G4','C5'],'chip',0.5,0.5);
+      return true;
+    }
+    case 'luna': {
+      log('🐱 Luna has entered the mix','c-egg',ln);
+      fireSweep('sine',700,340,0.42,0.4); await nap(0.5);
+      fireSweep('sine',620,300,0.5,0.35); await nap(0.6);
+      log('she demands the chair. and the milk.','c-sys',ln);
+      return true;
+    }
+    case 'bruh': {
+      log('bruh.','c-egg',ln);
+      fireSweep('sawtooth',260,90,0.85,0.4); await nap(0.95);
+      return true;
+    }
+    case 'airhorn': {
+      log('📢 BWAAAAAAH','c-egg',ln);
+      for(let k=0;k<3;k++){
+        fire('sawtooth',233,0.26,0.32); fire('sawtooth',311,0.26,0.28);
+        fire('square',466,0.26,0.14);
+        await nap(0.32);
+      }
+      return true;
+    }
+    case 'vibecheck': {
+      const pass=Math.random()>0.35;
+      log('running vibe check...','c-sys',ln);
+      for(let k=0;k<4;k++){ fire('chip',300+k*120,0.1,0.3); await nap(0.12); }
+      if(pass){ log('✓ VIBES: IMMACULATE','c-ok',ln);
+        await melody(['E5','G5','C6'],'chip',0.35,0.42); }
+      else { log('✗ VIBES: questionable','c-warn',ln);
+        fireSweep('square',400,120,0.5,0.3); await nap(0.6); }
+      return true;
+    }
+    case 'hackerman': {
+      log('> ACCESSING MAINFRAME','c-ok',ln);
+      for(let k=0;k<10;k++){
+        fire('square',120+Math.random()*900,0.055,0.16);
+        await nap(0.07);
+      }
+      log('> ACCESS GRANTED (it was your own browser)','c-ok',ln);
+      return true;
+    }
+    case 'siren': {
+      log('🚨 wee-woo','c-egg',ln);
+      for(let k=0;k<3;k++){
+        fireSweep('sine',480,880,0.42,0.35); await nap(0.44);
+        fireSweep('sine',880,480,0.42,0.35); await nap(0.44);
+      }
+      return true;
+    }
+    case 'coin': {
+      log('+1','c-egg',ln);
+      fire('square',988,0.07,0.4); await nap(0.075);
+      fire('square',1319,0.42,0.4); await nap(0.44);
+      return true;
+    }
+    case 'scales': {
+      const root=rest?parsePitch(splitArgs(rest)[0],env,ln):noteToHz('C4');
+      log('major scale from '+fmtHz(root),'c-egg',ln);
+      const steps=[0,2,4,5,7,9,11,12];
+      for(const s of steps){
+        if(RUN.stop) return true;
+        const hz=root*Math.pow(2,s/12);
+        fire(RUN.defWave,hz,0.24,0.4);
+        addVoice({wave:RUN.defWave,freq:hz,dur:0.24,gain:0.4},ln);
+        await nap(0.26);
+      }
+      return true;
+    }
+    /* public-domain melodies only — no lawyers were harmed */
+    case 'odetojoy': {
+      log('♪ Ode to Joy — Beethoven, 1824, gloriously public domain','c-egg',ln);
+      await melody(['E4','E4','F4','G4','G4','F4','E4','D4',
+                    'C4','C4','D4','E4',['E4',1.5],['D4',0.5],['D4',2]],'organ',0.5,0.4);
+      return true;
+    }
+    case 'twinkle': {
+      log('♪ Twinkle Twinkle — folk melody, also public domain','c-egg',ln);
+      await melody(['C4','C4','G4','G4','A4','A4',['G4',2],
+                    'F4','F4','E4','E4','D4','D4',['C4',2]],'sine',0.5,0.42);
+      return true;
+    }
+  }
+  return false;
+}
+
+/* ── 7. CONSOLE / UI PLUMBING ────────────────────────────── */
+const $=id=>document.getElementById(id);
+const con=$('console'), gutter=$('gutter'), code=$('code');
+const volSlide=$('volSlide'), tempoBox=$('tempoBox');
+
+function round(v){ return typeof v==='number'?(Math.round(v*1000)/1000):v; }
+function fmtHz(hz){
+  if(hz==null) return '—';
+  const n=hzToNote(hz);
+  return `${Math.round(hz)}Hz${n?' ('+n+')':''}`;
+}
+function fmtSec(s){ return s>=1?`${round(s)}s`:`${Math.round(s*1000)}ms`; }
+
+function log(text,cls,ln){
+  const row=document.createElement('div'); row.className='row';
+  const a=document.createElement('span'); a.className='ln'; a.textContent=ln?String(ln):'';
+  const b=document.createElement('span'); b.className='tx '+(cls||'c-sys'); b.textContent=text;
+  row.appendChild(a); row.appendChild(b); con.appendChild(row);
+  con.scrollTop=con.scrollHeight;
+  while(con.children.length>600) con.removeChild(con.firstChild);
+}
+
+function addVoice(v,ln){
+  liveVoices.push({...v,until:performance.now()+v.dur*1000});
+  if(liveVoices.length>40) liveVoices.shift();
+  renderVoices();
+}
+function renderVoices(){
+  const now=performance.now();
+  liveVoices=liveVoices.filter(v=>v.until>now);
+  const el=$('nowplay');
+  $('vCount').textContent=liveVoices.length;
+  if(!liveVoices.length){ el.innerHTML='<span class="np-empty">nothing playing</span>'; return; }
+  el.innerHTML='';
+  liveVoices.slice(-4).forEach(v=>{
+    const d=document.createElement('div'); d.className='voice';
+    d.innerHTML=`<span class="dot"></span><span class="w">${v.wave}</span>`+
+                `<span class="f">${fmtHz(v.freq)}</span><span class="g">${round(v.gain)}</span>`;
+    el.appendChild(d);
+  });
+}
+setInterval(renderVoices,180);
+
+function setStatus(state,msg,busy){
+  $('stState').textContent=state; $('stMsg').textContent=msg;
+  $('status').className='status'+(busy?'':' idle');
+  $('conTag').textContent=busy?'running':'ready';
+}
+
+/* ── 8. RUN CONTROL ──────────────────────────────────────── */
+async function run(){
+  killAll();
+  con.innerHTML='';
+  RUN={stop:false,tempo:parseFloat(tempoBox.value)||120,
+       defWave:'sine',defGain:0.7,defDur:1,steps:0,__break:false};
+  audio(); if(ctx.state==='suspended') await ctx.resume();
+  $('btnRun').disabled=true; $('btnStop').disabled=false;
+  setStatus('Playing','running your track',true);
+  log(`muzix 0.1 — ${activeFileName()}`,'c-sys',0);
+
+  const env=Object.create(null), fns=Object.create(null);
+  const t0=performance.now();
+  try{
+    const tree=parse(code.value);
+    if(!tree.length) log('nothing to play. Write a line.','c-warn',0);
+    await runTree(tree,env,fns,0);
+    if(RUN.stop) log('stopped','c-warn',0);
+    else log(`done — ${((performance.now()-t0)/1000).toFixed(2)}s`,'c-ok',0);
+    setStatus('Idle',RUN.stop?'stopped':'finished',false);
+  }catch(e){
+    if(e instanceof MzErr) log(`line ${e.line}: ${e.message}`,'c-err',e.line);
+    else log('engine hiccup: '+e.message,'c-err',0);
+    setStatus('Error','check the console',false);
+  }
+  RUN.stop=true;
+  $('btnRun').disabled=false; $('btnStop').disabled=true;
+}
+function stop(){
+  RUN.stop=true; killAll();
+  $('btnRun').disabled=false; $('btnStop').disabled=true;
+  setStatus('Idle','stopped',false);
+}
+$('btnRun').onclick=run;
+$('btnStop').onclick=stop;
+volSlide.oninput=()=>{ if(master) master.gain.setTargetAtTime(volSlide.value/100,ctx.currentTime,0.02); };
+tempoBox.onchange=()=>{ RUN.tempo=parseFloat(tempoBox.value)||120; };
+
+/* ── 9. EDITOR ───────────────────────────────────────────── */
+function refreshGutter(){
+  const lines=code.value.split('\n');
+  gutter.innerHTML=lines.map((l,i)=>{
+    const t=l.trim();
+    const sound=/^(play|playsound|p|drop|layer|sweep|slide)\b/.test(t)||EGG_LIST.includes(t.split(' ')[0]);
+    return sound?`<b>${i+1}</b>`:String(i+1);
+  }).join('\n');
+  gutter.scrollTop=code.scrollTop;
+}
+code.addEventListener('input',()=>{ refreshGutter(); files[active].body=code.value; });
+code.addEventListener('scroll',()=>{ gutter.scrollTop=code.scrollTop; });
+code.addEventListener('keydown',e=>{
+  if(e.key==='Tab'){
+    e.preventDefault();
+    const s=code.selectionStart,t=code.selectionEnd;
+    code.value=code.value.slice(0,s)+'  '+code.value.slice(t);
+    code.selectionStart=code.selectionEnd=s+2;
+    refreshGutter();
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){ e.preventDefault(); run(); }
+  if((e.ctrlKey||e.metaKey)&&e.key==='.'){ e.preventDefault(); stop(); }
+});
+
+/* ── 10. FILES ───────────────────────────────────────────── */
+const files={def:{name:'untitled.muzix',body:''}};
+let active='def';
+function activeFileName(){ return files[active].name; }
+function renderTabs(){
+  const bar=$('filebar'); bar.innerHTML='';
+  Object.entries(files).forEach(([id,f])=>{
+    const t=document.createElement('div');
+    t.className='ftab'+(id===active?' on':'');
+    const n=document.createElement('span'); n.textContent=f.name;
+    n.onclick=()=>openFile(id); t.appendChild(n);
+    if(id!=='def'){
+      const x=document.createElement('span'); x.className='x'; x.textContent='✕';
+      x.onclick=ev=>{ev.stopPropagation(); if(active===id) openFile('def'); delete files[id]; renderTabs();};
+      t.appendChild(x);
+    }
+    bar.appendChild(t);
+  });
+  const add=document.createElement('div');
+  add.className='fadd'; add.textContent='+ Open';
+  add.onclick=()=>$('fileIn').click();
+  bar.appendChild(add);
+}
+function openFile(id){
+  files[active].body=code.value;
+  active=id; code.value=files[id].body;
+  $('stFile').textContent=files[id].name;
+  refreshGutter(); renderTabs();
+}
+function addFile(name,body){
+  const id='f'+Date.now(); files[id]={name,body}; openFile(id);
+}
+$('fileIn').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{ addFile(f.name,ev.target.result); log('opened '+f.name,'c-ok',0); };
+  r.readAsText(f); e.target.value='';
+};
+const dz=$('dropZone'), ew=$('editWrap');
+ew.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('on');});
+ew.addEventListener('dragleave',()=>dz.classList.remove('on'));
+ew.addEventListener('drop',e=>{
+  e.preventDefault(); dz.classList.remove('on');
+  const f=e.dataTransfer.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=ev=>{ addFile(f.name,ev.target.result); log('opened '+f.name,'c-ok',0); };
+  r.readAsText(f);
+});
+$('btnSave').onclick=()=>{
+  const blob=new Blob([code.value],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=activeFileName().endsWith('.muzix')?activeFileName():activeFileName()+'.muzix';
+  a.click(); URL.revokeObjectURL(a.href);
+  log('saved '+a.download,'c-ok',0);
+};
+
+/* ── 11. EXAMPLES ────────────────────────────────────────── */
+const EXAMPLES={
+'Your first spec — loop 7':
+`<!DOCTYPE muzix>
+# exactly what you sketched: 35 seconds of sine at 500Hz
+loop 7
+  playsound sine 500 5s`,
+
+'Rising ladder (variables)':
+`<!DOCTYPE muzix>
+x = 300
+loop 4
+  playsound sine x 1000ms
+  x = x + 100`,
+
+'Chords — commas stack voices':
+`<!DOCTYPE muzix>
+# one line, three voices, all at once
+playsound sine C4 2s 0.4, square E4 2s 0.2, triangle G4 2s 0.3
+rest 0.4s
+playsound sine F3 2s 0.4, organ A3 2s 0.25, bell C4 2s 0.3`,
+
+'Drum-ish loop (tempo + noise)':
+`<!DOCTYPE muzix>
+tempo 128
+loop 8
+  drop noise 0.06s 0.35
+  playsound sine 55 0.5b 0.6
+  drop noise 4000 0.05s 0.18
+  rest 0.5b`,
+
+'Layering with drop':
+`<!DOCTYPE muzix>
+# drop = start it and keep going. play = wait for it.
+drop organ C3 8s 0.18
+drop organ G3 8s 0.14
+tempo 140
+loop 8
+  playsound chip C5 0.5b 0.35
+  playsound chip E5 0.5b 0.35`,
+
+'Sweeps & sirens':
+`<!DOCTYPE muzix>
+sweep sine 200 1600 1.5s 0.4
+rest 0.2s
+sweep sawtooth 1600 90 1s 0.3
+rest 0.3s
+siren`,
+
+'Functions & conditions':
+`<!DOCTYPE muzix>
+tempo 150
+
+def blip
+  playsound chip 880 0.25b 0.4
+  playsound chip 1320 0.25b 0.3
+
+x = 0
+loop 6
+  call blip
+  x = x + 1
+  if x > 3
+    playsound square 220 0.5b 0.25
+  else
+    rest 0.5b`,
+
+'Random noodling':
+`<!DOCTYPE muzix>
+tempo 180
+wave chip
+loop 24
+  n = random(1, 5)
+  f = 220 * n
+  playsound (f) 0.25b 0.3
+  drop noise 0.04s 0.12`,
+
+'Easter egg sampler':
+`<!DOCTYPE muzix>
+eggs
+rest 0.5s
+chez
+rest 0.4s
+luna
+rest 0.4s
+coin
+rest 0.4s
+vibecheck`
+};
+(function(){
+  const sel=$('exPick');
+  Object.keys(EXAMPLES).forEach(k=>{
+    const o=document.createElement('option'); o.value=k; o.textContent=k; sel.appendChild(o);
+  });
+  sel.onchange=()=>{
+    if(!sel.value) return;
+    code.value=EXAMPLES[sel.value];
+    files[active].body=code.value;
+    refreshGutter(); log('loaded example: '+sel.value,'c-ok',0);
+    sel.value='';
+  };
+})();
+
+/* ── 12. VISUALS ─────────────────────────────────────────── */
+const scope=$('scope'), sctx=scope.getContext('2d');
+const bars=$('bars'), bctx=bars.getContext('2d');
+function sizeCanvas(c){
+  const r=c.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+  c.width=Math.max(1,r.width*dpr); c.height=Math.max(1,r.height*dpr);
+  c.getContext('2d').setTransform(dpr,0,0,dpr,0,0);
+  return r;
+}
+let sR=sizeCanvas(scope), bR=sizeCanvas(bars);
+window.addEventListener('resize',()=>{ sR=sizeCanvas(scope); bR=sizeCanvas(bars); });
+
+const timeData=new Uint8Array(2048), freqData=new Uint8Array(1024);
+let idlePhase=0;
+
+function draw(){
+  requestAnimationFrame(draw);
+  /* ── oscilloscope ── */
+  sctx.clearRect(0,0,sR.width,sR.height);
+  const h=sR.height, w=sR.width, mid=h/2;
+
+  // faint grid
+  sctx.strokeStyle='#1a1533'; sctx.lineWidth=1;
+  sctx.beginPath(); sctx.moveTo(0,mid); sctx.lineTo(w,mid); sctx.stroke();
+
+  sctx.lineWidth=1.8; sctx.strokeStyle='#3dffe0';
+  sctx.shadowBlur=10; sctx.shadowColor='#3dffe088';
+  sctx.beginPath();
+  if(analyser){
+    analyser.getByteTimeDomainData(timeData);
+    const step=w/timeData.length;
+    for(let i=0;i<timeData.length;i++){
+      const y=mid+((timeData[i]-128)/128)*(h*0.42);
+      i?sctx.lineTo(i*step,y):sctx.moveTo(0,y);
+    }
+  }else{
+    idlePhase+=0.02;
+    for(let x=0;x<w;x++){
+      const y=mid+Math.sin(x*0.02+idlePhase)*1.2;
+      x?sctx.lineTo(x,y):sctx.moveTo(0,y);
+    }
+  }
+  sctx.stroke(); sctx.shadowBlur=0;
+
+  /* ── spectrum ── */
+  bctx.clearRect(0,0,bR.width,bR.height);
+  if(analyser){
+    analyser.getByteFrequencyData(freqData);
+    const n=52, bw=bR.width/n;
+    let peakIdx=0,peakVal=0;
+    for(let i=0;i<n;i++){
+      const src=Math.floor(Math.pow(i/n,1.7)*400)+1;
+      const v=freqData[src]/255;
+      if(freqData[src]>peakVal){peakVal=freqData[src];peakIdx=src;}
+      const bh=Math.max(1,v*bR.height*0.92);
+      const grd=bctx.createLinearGradient(0,bR.height,0,bR.height-bh);
+      grd.addColorStop(0,'#ff3d81'); grd.addColorStop(1,'#3dffe0');
+      bctx.fillStyle=grd;
+      bctx.fillRect(i*bw+1,bR.height-bh,bw-2,bh);
+    }
+    const hzr=$('hzread');
+    if(peakVal>40 && ctx){
+      const hz=peakIdx*ctx.sampleRate/analyser.fftSize;
+      hzr.innerHTML=`${Math.round(hz)}<small>Hz</small> ${hzToNote(hz)}`;
+    } else hzr.innerHTML='<small>idle</small>';
+  }
+}
+draw();
+
+/* ── 13. GUIDE CONTENT ───────────────────────────────────── */
+$('guideBody').innerHTML=`
+<div class="g-sec">
+  <div class="g-h">What Muzix is</div>
+  <p class="g-p">Muzix is a small language whose only job is making sound. One line, one noise.
+  There are no strings, no objects, no imports — just waves, pitches, and how long to hold them.
+  Files end in <code>.muzix</code>.</p>
+  <p class="g-p">Press <code>Ctrl</code>+<code>Enter</code> to run, <code>Ctrl</code>+<code>.</code> to stop.
+  Pink line numbers in the gutter are lines that will make sound.</p>
+</div>
+
+<div class="g-sec">
+  <div class="g-h">Anatomy of a line</div>
+<pre class="g-code">playsound  sine   440   2s    0.5
+<span class="cm">│          │      │     │     └ volume, 0–1 (optional)
+│          │      │     └────── how long (optional)
+│          │      └──────────── pitch: Hz or note name
+│          └─────────────────── waveform (optional)
+└────────────────────────────── the command</span></pre>
+  <p class="g-p">Only the pitch is required. Anything you leave off falls back to the current default
+  (<code>sine</code>, <code>1s</code>, <code>0.7</code>) — which you can change with
+  <code>wave</code>, <code>length</code>, and <code>gain</code>.</p>
+</div>
+
+<div class="g-sec">
+  <div class="g-h">Nesting</div>
+  <p class="g-p">Indentation decides what's inside what — same idea as Python. Two spaces per level.
+  You can write <code>end</code> to close a block if you prefer that, but you don't have to.</p>
+<pre class="g-code">loop 7
+  playsound sine 500 5s     <span class="cm"># inside the loop</span>
+say "done"                  <span class="cm"># outside it</span></pre>
+</div>
+
+<div class="g-sec">
+  <div class="g-h">Playing sound</div>
+  <table class="g-t">
+    <tr><td>play / playsound</td><td>Play, then wait for it to finish before the next line.</td></tr>
+    <tr><td>drop</td><td>Play and immediately move on — use this to layer pads under a melody.</td></tr>
+    <tr><td>sweep w f1 f2 dur g</td><td>Glide from one pitch to another. Great for sirens and risers.</td></tr>
+    <tr><td>rest / wait / silence</td><td>Do nothing, loudly. <code>rest 0.5s</code></td></tr>
+    <tr><td>stop</td><td>Cut every voice right now.</td></tr>
+  </table>
+  <p class="g-p"><b>Chords:</b> separate voices with commas on one line. They all start together;
+  the line waits for the longest one.</p>
+<pre class="g-code">playsound sine C4 2s 0.4, square E4 2s 0.2, triangle G4 2s 0.3</pre>
+</div>
+
+<div class="g-sec">
+  <div class="g-h">Waveforms</div>
+  <div class="pillrow">
+    <span class="pill">sine</span><span class="pill">square</span>
+    <span class="pill">triangle · tri</span><span class="pill">sawtooth · saw</span>
+    <span class="pill">noise</span><span class="pill">organ</span>
+    <span class="pill">chip</span><span class="pill">bell</span>
+  </div>
+  <p class="g-p"><code>noise</code> takes an optional pitch, which band-passes it —
+  <code>noise 4000 0.05s</code> is a hi-hat, <code>noise 0.06s</code> is a snare-ish thud.</p>
+</div>
+
+<div class="g-sec">
+  <div class="g-h">Pitch</div>
+  <p class="g-p">Write raw frequency (<code>500</code>), a note name (<code>C4</code>,
+  <code>F#3</code>, <code>Bb5</code>), or a variable holding either. A4 = 440Hz.
+  Frequency values line up with the Chrome Music Lab oscillator, so numbers you find there work here.</p>
+</div>
+
+<div class="g-sec">
+  <div class="g-h">Duration</div>
+  <table class="g-t">
+    <tr><td>5s</td><td>Five seconds.</td></tr>
+    <tr><td>1000ms</td><td>One thousand milliseconds.</td></tr>
+    <tr><td>0.5b</td><td>Half a beat — depends on <code>tempo</code>.</td></tr>
+    <tr><td>2</td><td>A bare number means seconds.</td></tr>
+  </table>
+</div>
+
+<div class="g-sec">
+  <div class="g-h">Variables & math</div>
+<pre class="g-code">x = 300
+x = x + 100
+f = 220 * random(1, 5)
+playsound sine (f) 0.5s     <span class="cm"># parens when the pitch is an expression</span></pre>
+  <p class="g-p">Operators: <code>+ - * / %</code>, parentheses, and <code>random(a, b)</code>.
+  Inside a loop, <code>i</code> counts from 0 and <code>n</code> counts from 1, for free.</p>
+  <div class="callout">A pitch or duration slot reads one token. If your value has spaces in it,
+  wrap it in parentheses: <code>playsound sine (x + 100) 1s</code>.</div>
+</div>
+
+<div class="g-sec">
+  <div class="g-h">Control flow</div>
+  <table class="g-t">
+    <tr><td>loop 4</td><td>Run the indented block four times.</td></tr>
+    <tr><td>forever</td><td>Run until you hit Stop.</td></tr>
+    <tr><td>if x &gt; 300 / else</td><td>Compare with <code>== != &gt; &lt; &gt;= &lt;=</code>.</td></tr>
+    <tr><td>break</td><td>Leave the current loop.</td></tr>
+    <tr><td>def name / call name</td><td>Name a block, then reuse it.</td></tr>
+    <tr><td>exit</td><td>End the whole script.</td></tr>
+  </table>
+<pre class="g-code">def blip
+  playsound chip 880 0.25b 0.4
+  playsound chip 1320 0.25b 0.3
+
+loop 6
+  call blip</pre>
+</div>
+
+<div class="g-sec">
+  <div class="g-h">Settings</div>
+  <table class="g-t">
+    <tr><td>tempo 128</td><td>Beats per minute. Only matters if you use <code>b</code> durations.</td></tr>
+    <tr><td>wave chip</td><td>Change the default waveform for later lines.</td></tr>
+    <tr><td>length 0.5b</td><td>Change the default duration.</td></tr>
+    <tr><td>gain 0.4</td><td>Change the default per-voice volume.</td></tr>
+    <tr><td>volume 0.6</td><td>Master output level, 0–1.</td></tr>
+    <tr><td>say "text"</td><td>Write a line to the console.</td></tr>
+    <tr><td>clear</td><td>Empty the console.</td></tr>
+  </table>
+</div>
+
+<div class="g-sec">
+  <div class="g-h">Comments & the header</div>
+<pre class="g-code">&lt;!DOCTYPE muzix&gt;   <span class="cm"># optional. purely for the vibes.</span>
+# this is a comment
+// so is this</pre>
+</div>
+
+<div class="g-sec">
+  <div class="g-h">Hidden things</div>
+  <p class="g-p">Run <code>eggs</code> to get a list. There are ${EGG_LIST.length-1} of them so far.
+  Some make noise, some just talk back. Keep typing weird words into the editor and see what answers.</p>
+</div>
+`;
+$('btnGuide').onclick=()=>$('guideVeil').classList.add('on');
+$('guideClose').onclick=()=>$('guideVeil').classList.remove('on');
+$('guideVeil').onclick=e=>{ if(e.target===$('guideVeil')) $('guideVeil').classList.remove('on'); };
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') $('guideVeil').classList.remove('on'); });
+
+/* ── 14. BOOT ────────────────────────────────────────────── */
+code.value=EXAMPLES['Your first spec — loop 7'];
+files.def.body=code.value;
+renderTabs(); refreshGutter(); renderVoices();
+log('muzix lab ready','c-ok',0);
+log('press Run, or pick an example up top','c-sys',0);
+log('type  eggs  in the editor and run it 👀','c-sys',0);
+</script>
+</body>
+</html>

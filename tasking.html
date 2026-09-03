@@ -1,0 +1,2195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TASKING</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+    :root {
+      --bg:#0a0c10; --surface:#111520; --border:#1e2a40;
+      --accent:#00ffe0; --accent2:#7b61ff; --warn:#ff4f4f;
+      --text:#c8d8f0; --dim:#4a5a78; --green:#39ff7a; --gold:#ffc800;
+      --team-a:#00ffe0; --team-b:#ff6b6b;
+      --mono:'Share Tech Mono',monospace; --display:'Orbitron',sans-serif;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+    body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);pointer-events:none;z-index:9999}
+    h1.logo{font-family:var(--display);font-size:clamp(2.5rem,8vw,5rem);font-weight:900;letter-spacing:.2em;color:var(--accent);text-shadow:0 0 20px rgba(0,255,224,.5),0 0 60px rgba(0,255,224,.2);margin-bottom:4px}
+    .tagline{color:var(--dim);font-size:.75rem;letter-spacing:.3em;text-transform:uppercase;margin-bottom:48px}
+    .screen{display:none;width:100%;max-width:620px}
+    .screen.active{display:flex;flex-direction:column;gap:16px}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:24px}
+    .card-title{font-family:var(--display);font-size:.65rem;letter-spacing:.25em;color:var(--dim);text-transform:uppercase;margin-bottom:16px}
+    label{display:block;font-size:.7rem;letter-spacing:.15em;color:var(--dim);margin-bottom:6px;text-transform:uppercase}
+    input,select{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:var(--mono);font-size:1rem;padding:10px 14px;outline:none;transition:border-color .15s}
+    input:focus,select:focus{border-color:var(--accent)}
+    input::placeholder{color:var(--dim)}
+    input[type=range]{padding:6px 0;cursor:pointer;accent-color:var(--accent)}
+    textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:var(--mono);font-size:1rem;padding:12px 14px;outline:none;resize:vertical;min-height:100px;transition:border-color .15s;line-height:1.6}
+    textarea:focus{border-color:var(--accent)}
+    textarea::placeholder{color:var(--dim)}
+    .input-group{display:flex;flex-direction:column;gap:12px}
+    .btn{font-family:var(--display);font-size:.8rem;font-weight:700;letter-spacing:.2em;padding:14px 24px;border:none;border-radius:3px;cursor:pointer;transition:all .15s;text-transform:uppercase}
+    .btn-primary{background:var(--accent);color:var(--bg)}
+    .btn-primary:hover{box-shadow:0 0 20px rgba(0,255,224,.4);transform:translateY(-1px)}
+    .btn-secondary{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+    .btn-secondary:hover{background:rgba(0,255,224,.07)}
+    .btn-ghost{background:transparent;color:var(--dim);border:1px solid var(--border);font-size:.7rem}
+    .btn-ghost:hover{color:var(--text);border-color:var(--dim)}
+    .btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+    .btn-row{display:flex;gap:12px}
+    .btn-row .btn{flex:1}
+    .error-msg{color:var(--warn);font-size:.75rem;letter-spacing:.1em;min-height:1em}
+    .success-msg{color:var(--green);font-size:.75rem;letter-spacing:.1em;min-height:1em}
+
+    /* role cards */
+    .role-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .role-card{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:14px;cursor:pointer;transition:all .15s;text-align:left;position:relative}
+    .role-card:hover{border-color:var(--accent)}
+    .role-card.selected{border-color:var(--accent);background:rgba(0,255,224,.05)}
+    .role-icon{font-size:1.4rem;margin-bottom:6px}
+    .role-name{font-family:var(--display);font-size:.6rem;font-weight:700;letter-spacing:.2em;color:var(--accent);margin-bottom:4px}
+    .role-alias{font-size:.65rem;color:var(--dim);letter-spacing:.1em}
+    .role-desc{font-size:.65rem;color:var(--text);margin-top:6px;line-height:1.5}
+    .role-count-badge{position:absolute;top:8px;right:8px;font-family:var(--display);font-size:.5rem;padding:2px 7px;border-radius:2px;background:rgba(0,255,224,.08);color:var(--dim);border:1px solid var(--border)}
+
+    /* badges */
+    .badge{font-family:var(--display);font-size:.55rem;letter-spacing:.15em;padding:3px 8px;border-radius:2px;background:rgba(0,255,224,.1);color:var(--accent);border:1px solid rgba(0,255,224,.3)}
+    .badge.gpu{background:rgba(123,97,255,.1);color:var(--accent2);border-color:rgba(123,97,255,.3)}
+    .badge.cpu{background:rgba(57,255,122,.1);color:var(--green);border-color:rgba(57,255,122,.3)}
+    .badge.seller{background:rgba(255,200,0,.1);color:var(--gold);border-color:rgba(255,200,0,.3)}
+    .badge.team-a{background:rgba(0,255,224,.12);color:var(--team-a);border-color:rgba(0,255,224,.4)}
+    .badge.team-b{background:rgba(255,107,107,.12);color:var(--team-b);border-color:rgba(255,107,107,.4)}
+    .badge.bot{background:rgba(123,97,255,.15);color:var(--accent2);border-color:rgba(123,97,255,.4)}
+
+    /* lobby */
+    .room-code-display{font-family:var(--display);font-size:clamp(2rem,8vw,3.5rem);font-weight:900;letter-spacing:.3em;color:var(--accent);text-align:center;text-shadow:0 0 30px rgba(0,255,224,.4);padding:16px 0}
+    .player-list{display:flex;flex-direction:column;gap:8px;min-height:80px}
+    .player-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:3px;font-size:.8rem}
+    .player-row .host-tag{font-size:.6rem;color:var(--dim);margin-left:auto}
+    .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite;flex-shrink:0}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .waiting-text{font-size:.7rem;color:var(--dim);letter-spacing:.1em;text-align:center}
+
+    /* bot counter */
+    .bot-counter{display:flex;align-items:center;gap:12px}
+    .bot-counter-btn{font-family:var(--display);font-size:1.1rem;font-weight:700;width:36px;height:36px;border:1px solid var(--border);border-radius:3px;background:var(--bg);color:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+    .bot-counter-btn:hover{border-color:var(--accent);background:rgba(0,255,224,.07)}
+    .bot-counter-val{font-family:var(--display);font-size:1.4rem;font-weight:700;color:var(--accent);min-width:32px;text-align:center}
+    .bot-machine-msg{font-size:.7rem;color:var(--accent2);letter-spacing:.08em;line-height:1.6;padding:10px 14px;background:rgba(123,97,255,.07);border:1px solid rgba(123,97,255,.2);border-radius:3px;margin-top:8px}
+
+    /* bot pace sliders */
+    .pace-grid{display:flex;flex-direction:column;gap:14px}
+    .pace-row{display:flex;flex-direction:column;gap:6px}
+    .pace-label-row{display:flex;justify-content:space-between;align-items:center}
+    .pace-val{font-family:var(--display);font-size:.75rem;color:var(--accent)}
+    .toggle-row{display:flex;align-items:center;gap:10px;font-size:.75rem;color:var(--dim);margin-top:4px}
+    .toggle{position:relative;width:36px;height:20px;cursor:pointer;flex-shrink:0}
+    .toggle input{opacity:0;width:0;height:0}
+    .toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:20px;transition:.2s}
+    .toggle-slider::before{content:'';position:absolute;width:14px;height:14px;left:3px;bottom:3px;background:var(--dim);border-radius:50%;transition:.2s}
+    .toggle input:checked+.toggle-slider{background:var(--accent2)}
+    .toggle input:checked+.toggle-slider::before{transform:translateX(16px);background:#fff}
+
+    /* assign table */
+    .assign-table{width:100%;border-collapse:collapse;font-size:.8rem}
+    .assign-table th{font-family:var(--display);font-size:.55rem;letter-spacing:.2em;color:var(--dim);text-align:left;padding:6px 10px;border-bottom:1px solid var(--border)}
+    .assign-table td{padding:8px 10px;border-bottom:1px solid rgba(30,42,64,.5);vertical-align:middle}
+    .assign-table select{padding:6px 10px;font-size:.75rem}
+    .assign-table input[type=text]{padding:6px 10px;font-size:.75rem}
+
+    /* teams */
+    .teams-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .team-col{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:14px}
+    .team-col.team-a{border-color:rgba(0,255,224,.3)}
+    .team-col.team-b{border-color:rgba(255,107,107,.3)}
+    .team-col-title{font-family:var(--display);font-size:.6rem;letter-spacing:.2em;margin-bottom:12px}
+    .team-col.team-a .team-col-title{color:var(--team-a)}
+    .team-col.team-b .team-col-title{color:var(--team-b)}
+    .team-player-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:3px;font-size:.75rem;margin-bottom:6px;background:var(--surface)}
+    .team-player-row select{padding:4px 8px;font-size:.7rem;margin-left:auto;width:auto}
+
+    /* HUD */
+    #hud{display:none;position:fixed;top:0;left:0;right:0;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;z-index:100;align-items:center;gap:20px;font-size:.75rem}
+    #hud.visible{display:flex}
+    .hud-score{font-family:var(--display);font-size:1.1rem;font-weight:700;color:var(--gold)}
+    .hud-role{margin-left:auto}
+    .hud-timer{font-family:var(--display);font-size:.9rem;color:var(--warn)}
+    .hud-mult{color:var(--accent2);font-family:var(--display);font-size:.75rem}
+    .hud-team{font-family:var(--display);font-size:.6rem;letter-spacing:.15em}
+
+    /* network */
+    .validation-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .vcheck{font-size:.65rem;padding:4px 10px;border-radius:2px;border:1px solid var(--border);color:var(--dim);background:var(--bg);transition:all .2s}
+    .vcheck.ok{border-color:var(--green);color:var(--green);background:rgba(57,255,122,.07)}
+    .vcheck.bad{border-color:var(--warn);color:var(--warn);background:rgba(255,79,79,.07)}
+    .char-counter{font-size:.7rem;color:var(--dim);text-align:right;margin-top:4px}
+
+    /* CPU typing */
+    .typing-display{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:16px;font-size:1.05rem;line-height:1.8;letter-spacing:.04em;min-height:80px;cursor:text}
+    .char-done{color:var(--green)}
+    .char-todo{color:var(--dim)}
+    .char-cursor{display:inline-block;border-left:2px solid var(--accent);animation:blink .8s step-end infinite;margin-left:-1px;height:1.1em;vertical-align:text-bottom}
+    @keyframes blink{50%{opacity:0}}
+    .cpu-input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+
+    /* toasts */
+    .toast{position:fixed;bottom:30px;right:24px;font-family:var(--display);font-size:.7rem;letter-spacing:.15em;padding:10px 18px;border-radius:4px;opacity:0;transform:translateY(10px);transition:all .3s;z-index:200;pointer-events:none}
+    .toast.show{opacity:1;transform:translateY(0)}
+    #penalty-toast{background:var(--warn);color:#fff}
+    #gpu-assist-toast{background:var(--accent2);color:#fff;bottom:70px}
+    #gpu-abort-toast{background:var(--dim);color:#fff;bottom:70px}
+
+    /* seller */
+    .word-bank{display:flex;flex-wrap:wrap;gap:10px;min-height:80px;padding:8px 0}
+    .word-chip{background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:8px 14px;font-size:.95rem;cursor:pointer;transition:all .15s;user-select:none;position:relative}
+    .word-chip:hover:not(.clicked):not(.cooling){border-color:var(--gold);color:var(--gold)}
+    .word-chip.clicked{opacity:.35;cursor:default;border-color:var(--green);color:var(--green)}
+    .word-chip.cooling{border-color:var(--accent2);color:var(--accent2);cursor:wait}
+    .points-popup{position:absolute;top:-24px;left:50%;transform:translateX(-50%);font-family:var(--display);font-size:.75rem;color:var(--gold);font-weight:700;animation:floatUp .8s forwards;pointer-events:none;white-space:nowrap}
+    @keyframes floatUp{0%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-28px)}}
+    .cooldown-bar{height:3px;background:var(--accent2);width:100%;margin-top:4px;border-radius:2px;transform-origin:left;animation:shrink .5s linear forwards}
+    @keyframes shrink{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+
+    /* GPU */
+    .scramble-display{display:flex;flex-wrap:wrap;gap:10px;min-height:60px;padding:8px 0}
+    .scramble-word{background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:8px 14px;font-size:.95rem;color:var(--accent2)}
+    .gpu-word-inputs{display:flex;flex-direction:column;gap:8px}
+    .gpu-word-row{display:flex;align-items:center;gap:10px;font-size:.8rem}
+    .gpu-word-row input{font-size:.9rem;padding:8px 12px}
+    .gpu-tick{color:var(--green);font-size:1rem}
+    .gpu-cross{color:var(--warn);font-size:1rem}
+
+    /* waiting */
+    .waiting-anim{display:flex;gap:6px;justify-content:center;margin:20px 0}
+    .waiting-anim span{width:10px;height:10px;background:var(--accent);border-radius:50%;animation:bounce 1.2s ease-in-out infinite}
+    .waiting-anim span:nth-child(2){animation-delay:.2s;background:var(--accent2)}
+    .waiting-anim span:nth-child(3){animation-delay:.4s;background:var(--green)}
+    @keyframes bounce{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+
+
+    /* ── Blob background ── */
+    #blob-canvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+    body>*:not(#blob-canvas){position:relative;z-index:1}
+    #hud{z-index:102}
+    body::before{z-index:103}
+    .toast{z-index:200}
+    #viewer-overlay{z-index:300}
+
+    /* ── Score pop ── */
+    .score-pop{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);font-family:var(--display);font-size:clamp(2rem,8vw,4rem);font-weight:900;color:var(--gold);text-shadow:0 0 40px rgba(255,200,0,.8);pointer-events:none;z-index:250;opacity:0;transition:none}
+    .score-pop.burst{animation:scoreBurst .7s cubic-bezier(.22,1,.36,1) forwards}
+    @keyframes scoreBurst{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}40%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-60%) scale(.9)}}
+
+    /* ── Screen flash ── */
+    #flash-overlay{position:fixed;inset:0;pointer-events:none;z-index:198;opacity:0}
+    #flash-overlay.flash-red{animation:flashRed .35s ease-out forwards}
+    #flash-overlay.flash-green{animation:flashGreen .4s ease-out forwards}
+    #flash-overlay.flash-gold{animation:flashGold .5s ease-out forwards}
+    @keyframes flashRed{0%{background:rgba(255,79,79,.35);opacity:1}100%{background:rgba(255,79,79,0);opacity:0}}
+    @keyframes flashGreen{0%{background:rgba(57,255,122,.25);opacity:1}100%{background:rgba(57,255,122,0);opacity:0}}
+    @keyframes flashGold{0%{background:rgba(255,200,0,.3);opacity:1}100%{background:rgba(255,200,0,0);opacity:0}}
+
+    /* ── Shake ── */
+    @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+    .shake{animation:shake .35s ease-out}
+
+    /* ── Word chip pop ── */
+    .word-chip.popping{animation:chipPop .25s cubic-bezier(.22,1,.36,1)}
+    @keyframes chipPop{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
+
+    /* ── Multiplier flash in HUD ── */
+    .mult-bump{animation:multBump .4s cubic-bezier(.22,1,.36,1)}
+    @keyframes multBump{0%{transform:scale(1)}50%{transform:scale(1.6);color:#fff}100%{transform:scale(1)}}
+
+    /* ── Sentence complete banner ── */
+    #complete-banner{position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--green);color:var(--bg);font-family:var(--display);font-size:.8rem;font-weight:700;letter-spacing:.2em;padding:10px 28px;border-radius:4px;opacity:0;pointer-events:none;z-index:199;white-space:nowrap}
+    #complete-banner.show{animation:bannerIn .6s cubic-bezier(.22,1,.36,1) forwards}
+    @keyframes bannerIn{0%{opacity:0;transform:translateX(-50%) translateY(-20px)}20%{opacity:1;transform:translateX(-50%) translateY(0)}80%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-10px)}}
+
+    /* ── Viewer overlay ── */
+    #viewer-overlay{display:none;position:fixed;inset:0;background:var(--bg);overflow-y:auto;padding:24px;z-index:300}
+    #viewer-overlay.active{display:block}
+    .viewer-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;max-width:1200px;margin:0 auto}
+    .viewer-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:18px}
+    .viewer-card-title{font-family:var(--display);font-size:.6rem;letter-spacing:.2em;color:var(--dim);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+    .viewer-text{font-size:.85rem;line-height:1.8;letter-spacing:.04em;word-break:break-all;min-height:40px}
+    .viewer-char-done{color:var(--green)}
+    .viewer-char-todo{color:var(--dim)}
+    .viewer-char-cursor{display:inline-block;border-left:2px solid var(--accent);animation:blink .8s step-end infinite;height:1em;vertical-align:text-bottom}
+    .viewer-word{display:inline-block;padding:4px 10px;border:1px solid var(--border);border-radius:3px;margin:3px;font-size:.8rem;transition:all .2s}
+    .viewer-word.clicked{border-color:var(--green);color:var(--green);opacity:.5}
+    .viewer-word.current{border-color:var(--gold);color:var(--gold)}
+    .viewer-progress{height:4px;background:var(--border);border-radius:2px;margin-top:10px;overflow:hidden}
+    .viewer-progress-bar{height:100%;background:var(--accent);border-radius:2px;transition:width .3s}
+    .viewer-status{font-size:.65rem;color:var(--dim);margin-top:8px;letter-spacing:.08em}
+
+    /* ── Host end game btn ── */
+    #host-end-btn{display:none;position:fixed;bottom:20px;right:20px;z-index:150;background:var(--warn);color:#fff;font-family:var(--display);font-size:.65rem;font-weight:700;letter-spacing:.15em;padding:10px 18px;border:none;border-radius:3px;cursor:pointer;box-shadow:0 0 20px rgba(255,79,79,.4);animation:pulse 2s infinite}
+    #host-end-btn.visible{display:block}
+
+    /* ── Viewer link btn ── */
+    .viewer-link-row{display:flex;gap:10px;align-items:center;margin-top:10px}
+    .viewer-link-row input{font-size:.7rem;padding:7px 10px;flex:1}
+    .copy-btn{font-family:var(--display);font-size:.6rem;font-weight:700;letter-spacing:.1em;padding:8px 14px;background:var(--accent2);color:#fff;border:none;border-radius:3px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+    .copy-btn:hover{opacity:.85}
+    select option{background:var(--surface)}
+  </style>
+</head>
+<body>
+
+
+<canvas id="blob-canvas"></canvas>
+<div id="flash-overlay"></div>
+<div id="complete-banner"></div>
+<div class="score-pop" id="score-pop"></div>
+<button id="host-end-btn" onclick="hostEndGame()">⏹ END GAME</button>
+<div id="viewer-overlay"></div>
+<h1 class="logo">TASKING</h1>
+<p class="tagline">Collaborative · Real-time · Networked</p>
+
+<div id="hud">
+  <span id="hud-team-label" class="hud-team"></span>
+  <span style="color:var(--dim);font-size:.7rem;">Score:</span>
+  <span class="hud-score" id="hud-score">0</span>
+  <span class="hud-mult" id="hud-mult"></span>
+  <span class="hud-timer" id="hud-timer"></span>
+  <span class="hud-role" id="hud-role-badge"></span>
+</div>
+
+<div class="toast" id="penalty-toast">−7 LETTERS</div>
+<div class="toast" id="gpu-assist-toast">⚡ GPU ASSIST — WORDS REMOVED</div>
+<div class="toast" id="gpu-abort-toast">⚙️ CPU FINISHED — TASK ENDED</div>
+
+<!-- ══ MENU ══ -->
+<div class="screen active" id="screen-menu">
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="showScreen('screen-host-setup')">HOST</button>
+    <button class="btn btn-secondary" onclick="showScreen('screen-join')">JOIN</button>
+  </div>
+  <p class="error-msg" id="menu-error"></p>
+</div>
+
+<!-- ══ HOST SETUP ══ -->
+<div class="screen" id="screen-host-setup">
+  <div class="card">
+    <p class="card-title">Game Settings</p>
+    <div class="input-group">
+      <div>
+        <label>Your name</label>
+        <input type="text" id="host-name" placeholder="Enter your name" maxlength="20"/>
+      </div>
+      <div>
+        <label>Win condition</label>
+        <select id="win-condition">
+          <option value="timer">Timer — most points when time runs out</option>
+          <option value="points">First to reach a point threshold</option>
+          <option value="host">Host decision</option>
+        </select>
+      </div>
+      <div id="timer-setting">
+        <label>Timer duration (minutes)</label>
+        <input type="number" id="timer-minutes" value="5" min="1" max="60"/>
+      </div>
+      <div id="points-setting" style="display:none;">
+        <label>Point threshold</label>
+        <input type="number" id="points-target" value="100" min="10" max="9999"/>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">Your Role</p>
+    <div class="role-grid">
+      <div class="role-card" data-role="network" onclick="selectRole(this,'host')">
+        <div class="role-icon">📡</div><div class="role-name">Network</div>
+        <div class="role-alias">The Source</div>
+        <div class="role-desc">Write sentences for your team to process.</div>
+      </div>
+      <div class="role-card" data-role="cpu" onclick="selectRole(this,'host')">
+        <div class="role-icon">⚙️</div><div class="role-name">CPU</div>
+        <div class="role-alias">The Processor</div>
+        <div class="role-desc">Type the sentence correctly to pass it on.</div>
+      </div>
+      <div class="role-card" data-role="seller" onclick="selectRole(this,'host')">
+        <div class="role-icon">💰</div><div class="role-name">Seller</div>
+        <div class="role-alias">The Monetizer</div>
+        <div class="role-desc">Click words to earn points for your team.</div>
+      </div>
+      <div class="role-card" data-role="gpu" onclick="selectRole(this,'host')">
+        <div class="role-icon">⚡</div><div class="role-name">GPU</div>
+        <div class="role-alias">The Accelerator</div>
+        <div class="role-desc">Unscramble words to boost your team's score.</div>
+      </div>
+    </div>
+  </div>
+  <p class="error-msg" id="host-error"></p>
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="showScreen('screen-menu')">Back</button>
+    <button class="btn btn-primary" onclick="hostGame()">Create Room</button>
+  </div>
+</div>
+
+<!-- ══ JOIN ══ -->
+<div class="screen" id="screen-join">
+  <div class="card">
+    <p class="card-title">Join a Room</p>
+    <div class="input-group">
+      <div><label>Your name</label><input type="text" id="join-name" placeholder="Enter your name" maxlength="20"/></div>
+      <div><label>Room code</label><input type="text" id="join-code" placeholder="Enter 4–7 character code" maxlength="7" style="text-transform:uppercase;letter-spacing:.3em;font-size:1.2rem;"/></div>
+    </div>
+  </div>
+  <p class="error-msg" id="join-error"></p>
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="showScreen('screen-menu')">Back</button>
+    <button class="btn btn-primary" onclick="findRoom()">Find Room</button>
+  </div>
+</div>
+
+<!-- ══ JOIN: PICK ROLE ══ -->
+<div class="screen" id="screen-join-role">
+  <div class="card">
+    <p class="card-title">Choose Your Role</p>
+    <p style="font-size:.7rem;color:var(--dim);margin-bottom:14px;">Multiple players can share the same role.</p>
+    <div class="role-grid" id="join-role-grid">
+      <div class="role-card" data-role="network" onclick="selectRole(this,'join')">
+        <div class="role-icon">📡</div><div class="role-name">Network</div><div class="role-alias">The Source</div>
+        <div class="role-desc">Write sentences for your team to process.</div>
+        <span class="role-count-badge" id="jrc-network">0 players</span>
+      </div>
+      <div class="role-card" data-role="cpu" onclick="selectRole(this,'join')">
+        <div class="role-icon">⚙️</div><div class="role-name">CPU</div><div class="role-alias">The Processor</div>
+        <div class="role-desc">Type the sentence correctly to pass it on.</div>
+        <span class="role-count-badge" id="jrc-cpu">0 players</span>
+      </div>
+      <div class="role-card" data-role="seller" onclick="selectRole(this,'join')">
+        <div class="role-icon">💰</div><div class="role-name">Seller</div><div class="role-alias">The Monetizer</div>
+        <div class="role-desc">Click words to earn points for your team.</div>
+        <span class="role-count-badge" id="jrc-seller">0 players</span>
+      </div>
+      <div class="role-card" data-role="gpu" onclick="selectRole(this,'join')">
+        <div class="role-icon">⚡</div><div class="role-name">GPU</div><div class="role-alias">The Accelerator</div>
+        <div class="role-desc">Unscramble words to boost your team's score.</div>
+        <span class="role-count-badge" id="jrc-gpu">0 players</span>
+      </div>
+    </div>
+  </div>
+  <p class="error-msg" id="join-role-error"></p>
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="showScreen('screen-join')">Back</button>
+    <button class="btn btn-primary" onclick="joinGame()">Join Room</button>
+  </div>
+</div>
+
+<!-- ══ LOBBY ══ -->
+<div class="screen" id="screen-lobby">
+  <div class="card" style="text-align:center;">
+    <p class="card-title">Room Code</p>
+    <div class="room-code-display" id="lobby-code">----</div>
+    <p style="font-size:.7rem;color:var(--dim);letter-spacing:.1em;">Share this with your team</p>
+    <div class="viewer-link-row" id="viewer-link-row" style="display:none;">
+      <input type="text" id="viewer-link-input" readonly/>
+      <button class="copy-btn" onclick="copyViewerLink()">Copy Viewer Link</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-title">Players &amp; Bots <span id="player-count" style="color:var(--accent);">0</span> <span id="team-mode-label" style="font-size:.6rem;color:var(--dim);margin-left:8px;"></span></p>
+    <div class="player-list" id="player-list"><p class="waiting-text">Waiting for players...</p></div>
+  </div>
+
+  <!-- HOST: bot count -->
+  <div class="card" id="bot-card" style="display:none;">
+    <p class="card-title">Brobots</p>
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <div class="bot-counter">
+        <button class="bot-counter-btn" onclick="changeBotCount(-1)">−</button>
+        <span class="bot-counter-val" id="bot-count-display">0</span>
+        <button class="bot-counter-btn" onclick="changeBotCount(1)">+</button>
+      </div>
+      <span style="font-size:.7rem;color:var(--dim);">bots in game (max <span id="bot-max-display">12</span>)</span>
+    </div>
+    <div class="bot-machine-msg" id="bot-machine-msg" style="display:none;"></div>
+  </div>
+
+  <!-- HOST: bot pacing -->
+  <div class="card" id="bot-pace-card" style="display:none;">
+    <p class="card-title">Bot Settings</p>
+    <div class="pace-grid">
+      <div class="pace-row">
+        <div class="pace-label-row">
+          <label style="margin:0;">⚙️ CPU bot — seconds per character</label>
+          <span class="pace-val" id="pace-cpu-val">0.10s</span>
+        </div>
+        <input type="range" id="pace-cpu" min="0.02" max="0.5" step="0.01" value="0.10" oninput="updatePaceDisplay()"/>
+        <div class="toggle-row">
+          <label class="toggle"><input type="checkbox" id="toggle-cpu-mistake"/><span class="toggle-slider"></span></label>
+          <span>Enable 1/44 mistake chance</span>
+        </div>
+      </div>
+      <div class="pace-row">
+        <div class="pace-label-row">
+          <label style="margin:0;">⚡ GPU bot — seconds per word</label>
+          <span class="pace-val" id="pace-gpu-val">0.30s</span>
+        </div>
+        <input type="range" id="pace-gpu" min="0.05" max="2.0" step="0.05" value="0.30" oninput="updatePaceDisplay()"/>
+        <p style="font-size:.65rem;color:var(--dim);margin-top:4px;">Must be faster than CPU pace × avg word length (checked on start)</p>
+      </div>
+      <div class="pace-row">
+        <div class="pace-label-row">
+          <label style="margin:0;">💰 Seller bot — seconds per click</label>
+          <span class="pace-val" id="pace-seller-val">0.80s</span>
+        </div>
+        <input type="range" id="pace-seller" min="0.5" max="5.0" step="0.1" value="0.80" oninput="updatePaceDisplay()"/>
+        <div class="toggle-row">
+          <label class="toggle"><input type="checkbox" id="toggle-seller-vary"/><span class="toggle-slider"></span></label>
+          <span>Vary click speed (±30%)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOST: team split -->
+  <div class="card" id="teams-card" style="display:none;">
+    <p class="card-title">Team Split</p>
+    <p style="font-size:.7rem;color:var(--dim);margin-bottom:12px;">8+ players/bots detected. Split into teams or keep everyone on Alpha.</p>
+    <div class="btn-row" style="margin-bottom:14px;">
+      <button class="btn btn-secondary" style="font-size:.65rem;padding:10px;" onclick="autoSplitTeams()">⚡ Auto Split</button>
+      <button class="btn btn-ghost" style="font-size:.65rem;padding:10px;" onclick="clearTeams()">Clear</button>
+    </div>
+    <div class="teams-grid">
+      <div class="team-col team-a"><div class="team-col-title">▲ TEAM ALPHA</div><div id="team-a-list"></div></div>
+      <div class="team-col team-b"><div class="team-col-title">▼ TEAM BETA</div><div id="team-b-list"></div></div>
+    </div>
+  </div>
+
+  <!-- HOST: role assignment -->
+  <div class="card" id="assign-card" style="display:none;">
+    <p class="card-title">Role &amp; Name Assignment</p>
+    <div class="btn-row" style="margin-bottom:12px;">
+      <button class="btn btn-secondary" style="font-size:.65rem;padding:10px;" onclick="randomizeRoles()">🎲 Randomize Roles</button>
+      <button class="btn btn-ghost" style="font-size:.65rem;padding:10px;" onclick="clearAssignments()">Clear</button>
+    </div>
+    <table class="assign-table">
+      <thead><tr><th>Player / Bot</th><th>Name</th><th>Role</th></tr></thead>
+      <tbody id="assign-tbody"></tbody>
+    </table>
+    <p style="font-size:.65rem;color:var(--dim);margin-top:10px;">Bot names and roles can be changed here.</p>
+  </div>
+
+  <!-- HOST: game settings -->
+  <div class="card" id="host-settings-card" style="display:none;">
+    <p class="card-title">Room Settings</p>
+    <div class="settings-grid">
+      <div>
+        <label>Win condition</label>
+        <select id="lobby-win-condition" onchange="updateRoomSettings()">
+          <option value="timer">Timer</option>
+          <option value="points">Point threshold</option>
+          <option value="host">Host decision</option>
+        </select>
+      </div>
+      <div id="lobby-timer-wrap">
+        <label>Duration (min)</label>
+        <input type="number" id="lobby-timer" value="5" min="1" max="60" onchange="updateRoomSettings()"/>
+      </div>
+      <div id="lobby-points-wrap" style="display:none;">
+        <label>Point threshold</label>
+        <input type="number" id="lobby-points" value="100" min="10" max="9999" onchange="updateRoomSettings()"/>
+      </div>
+    </div>
+  </div>
+
+  <div class="waiting-text" style="display:flex;align-items:center;justify-content:center;gap:10px;">
+    <span class="status-dot"></span>
+    <span id="lobby-status">Waiting for host to start...</span>
+  </div>
+  <p class="error-msg" id="lobby-error"></p>
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="leaveRoom()">Leave</button>
+    <button class="btn btn-primary" id="start-btn" style="display:none;" onclick="startGame()">Start Game</button>
+  </div>
+</div>
+
+<!-- ══ GAMEPLAY ══ -->
+<div class="screen" id="screen-waiting">
+  <div class="card" style="text-align:center;padding:48px 24px;">
+    <p class="card-title">Waiting for Task</p>
+    <div class="waiting-anim"><span></span><span></span><span></span></div>
+    <p id="waiting-msg" style="color:var(--dim);font-size:.8rem;letter-spacing:.1em;margin-top:8px;">Stand by...</p>
+  </div>
+</div>
+
+<!-- ══ GAME OVER ══ -->
+<div class="screen" id="screen-gameover">
+  <div class="card" style="text-align:center;padding:40px 24px;">
+    <p class="card-title" id="gameover-title">Game Over</p>
+    <div id="gameover-trophy" style="font-size:3.5rem;margin:8px 0 16px;">🏆</div>
+    <div id="gameover-result" style="font-family:var(--display);font-size:1.4rem;font-weight:900;letter-spacing:.1em;margin-bottom:24px;color:var(--gold);"></div>
+    <div id="gameover-scores" style="display:flex;flex-direction:column;gap:10px;margin-bottom:8px;"></div>
+  </div>
+  <div id="gameover-stats" class="card" style="display:none;">
+    <p class="card-title">Match Stats</p>
+    <div id="gameover-stats-body" style="display:flex;flex-direction:column;gap:8px;font-size:.8rem;"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="leaveRoom()">Leave</button>
+    <button class="btn btn-primary" id="gameover-again-btn" style="display:none;" onclick="returnToLobby()">Back to Lobby</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-network">
+  <div class="card">
+    <p class="card-title">📡 Network — Write a Sentence</p>
+    <p style="font-size:.75rem;color:var(--dim);margin-bottom:12px;line-height:1.6;">At least <strong style="color:var(--text);">9 words</strong>, max <strong style="color:var(--text);">3 sentences</strong>, max <strong style="color:var(--text);">3 punctuation marks</strong> (<code style="color:var(--accent);">. ? ! ; : ,</code>).</p>
+    <textarea id="network-input" placeholder="Type your sentence here..." oninput="validateNetworkInput()"></textarea>
+    <div class="char-counter" id="network-char-count">0 words</div>
+    <div class="validation-row">
+      <span class="vcheck" id="vcheck-words">9+ words</span>
+      <span class="vcheck" id="vcheck-sentences">≤3 sentences</span>
+      <span class="vcheck" id="vcheck-punct">≤3 punctuation</span>
+    </div>
+  </div>
+  <p class="error-msg" id="network-error"></p>
+  <p class="success-msg" id="network-success"></p>
+  <button class="btn btn-primary" id="network-submit-btn" onclick="submitSentence()" disabled>Transmit</button>
+</div>
+
+<div class="screen" id="screen-cpu">
+  <div class="card">
+    <p class="card-title">⚙️ CPU — Type it Exactly</p>
+    <p style="font-size:.7rem;color:var(--dim);margin-bottom:12px;">One mistake = back 7 characters.</p>
+    <div class="typing-display" id="cpu-display" onclick="focusCpuInput()"></div>
+    <input class="cpu-input" id="cpu-hidden-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <span style="font-size:.7rem;color:var(--dim);">Click the text above to start typing</span>
+    <span id="cpu-progress" style="font-family:var(--display);font-size:.7rem;color:var(--accent);">0%</span>
+  </div>
+</div>
+
+<div class="screen" id="screen-seller">
+  <div class="card">
+    <p class="card-title">💰 Seller — Click Each Word</p>
+    <p style="font-size:.7rem;color:var(--dim);margin-bottom:12px;">+1 per 3 letters (rounded up). 0.5s cooldown between clicks.</p>
+    <div class="word-bank" id="seller-word-bank"></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;font-size:.8rem;">
+    <span style="color:var(--dim);">This sentence:</span>
+    <span id="seller-sentence-score" style="font-family:var(--display);color:var(--gold);">+0 pts</span>
+  </div>
+</div>
+
+<div class="screen" id="screen-gpu">
+  <div class="card">
+    <p class="card-title">⚡ GPU — Unscramble the Words</p>
+    <p style="font-size:.7rem;color:var(--dim);margin-bottom:12px;">Get them all right to boost your team's score ×1.1 and cut 7 words from the CPU's task.</p>
+    <div class="scramble-display" id="gpu-scramble-display"></div>
+  </div>
+  <div class="card">
+    <p class="card-title">Your Answers</p>
+    <div class="gpu-word-inputs" id="gpu-word-inputs"></div>
+  </div>
+  <p class="error-msg" id="gpu-error"></p>
+  <button class="btn btn-primary" onclick="submitGpu()">Submit</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import {
+  getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot,
+  collection, getDocs, addDoc, serverTimestamp, deleteDoc
+} from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey:"AIzaSyCILSLXCGPPS8ppAqeisIBVzbEIuQ_gQf4",
+  authDomain:"tasking-1de74.firebaseapp.com",
+  projectId:"tasking-1de74",
+  storageBucket:"tasking-1de74.firebasestorage.app",
+  messagingSenderId:"429976706370",
+  appId:"1:429976706370:web:b7c96a9e9ca64e9aa1bcdb",
+  measurementId:"G-HH1N3E6YW7"
+});
+const db = getFirestore(app);
+
+// ─── State ───────────────────────────────────────────
+let currentRoom=null, currentPlayer=null, myRole=null, myTeam=null;
+let isHost=false, selectedRole=null;
+let roomUnsubscribe=null, playersUnsubscribe=null, taskUnsubscribe=null;
+let lobbyPlayers=[]; // includes bots
+let gameStarted=false;
+let teamAssignments={}; // playerId→'A'|'B'
+const hostAssignments={}; // playerId→role
+const botNames={}; // botId→name override
+let botCount=0;
+let botIntervals=[]; // active bot timers, cleared on leave
+
+// CPU state
+let cpuTarget='', cpuTyped='', cpuSentenceId=null, cpuCompleting=false;
+// Seller state
+let sellerCooling=false, sellerSentenceScore=0, sellerSentenceId=null;
+// GPU state
+let gpuWords=[], gpuSentenceId=null;
+// Timer
+let hudTimerInterval=null;
+
+// ─── Bot word bank (Network bot uses this) ───────────
+const WORD_BANK = [
+  'the','quick','brown','fox','jumps','over','lazy','dog',
+  'computer','keyboard','monitor','server','network','data',
+  'electric','signal','process','system','binary','digital',
+  'cloud','memory','storage','buffer','packet','stream',
+  'robot','machine','logic','circuit','voltage','silicon',
+  'fast','slow','bright','dark','quiet','loud','warm','cold',
+  'cats','run','play','sleep','eat','dream','code','build',
+  'stars','moon','sun','sky','ocean','river','forest','city',
+  'people','laugh','talk','think','learn','grow','change','move',
+  'time','space','light','sound','power','force','energy','mass',
+  'blue','green','red','yellow','orange','purple','white','black',
+  'always','never','sometimes','often','rarely','usually','mostly',
+  'very','quite','rather','almost','nearly','barely','just','even'
+];
+
+function randomBotName() {
+  const n = Math.floor(Math.random() * 1000);
+  return `Brobot${String(n).padStart(3,'0')}`;
+}
+
+// ─── Helpers ─────────────────────────────────────────
+function generateCode() {
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let c=''; const len=4+Math.floor(Math.random()*4);
+  for(let i=0;i<len;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+  return c;
+}
+function generatePlayerId() { return Math.random().toString(36).slice(2,10); }
+function setError(id,msg)   { const e=document.getElementById(id); if(e) e.textContent=msg; }
+function setSuccess(id,msg) { const e=document.getElementById(id); if(e) e.textContent=msg; }
+function rnd(min,max)       { return min+Math.random()*(max-min); }
+
+const ROLE_META={
+  network:{label:'NETWORK',cls:'',     icon:'📡'},
+  cpu:    {label:'CPU',    cls:'cpu',  icon:'⚙️'},
+  seller: {label:'SELLER', cls:'seller',icon:'💰'},
+  gpu:    {label:'GPU',    cls:'gpu',  icon:'⚡'}
+};
+
+// ─── Screen Nav ──────────────────────────────────────
+window.showScreen=function(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+};
+
+// ─── Role Selection ──────────────────────────────────
+window.selectRole=function(el,ctx){
+  const grid=ctx==='host'?'#screen-host-setup .role-card':'#join-role-grid .role-card';
+  document.querySelectorAll(grid).forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedRole=el.dataset.role;
+};
+
+// ─── Win condition UI ────────────────────────────────
+// Guard: these elements don't exist in viewer mode
+if(document.getElementById('win-condition')){
+  document.getElementById('win-condition').addEventListener('change',function(){
+    document.getElementById('timer-setting').style.display =this.value==='timer' ?'':'none';
+    document.getElementById('points-setting').style.display=this.value==='points'?'':'none';
+  });
+  document.getElementById('lobby-win-condition').addEventListener('change',function(){
+    document.getElementById('lobby-timer-wrap').style.display =this.value==='timer' ?'':'none';
+    document.getElementById('lobby-points-wrap').style.display=this.value==='points'?'':'none';
+    window.updateRoomSettings();
+  });
+}
+
+// ─── Bot counter ─────────────────────────────────────
+window.changeBotCount=function(delta){
+  const humans=lobbyPlayers.filter(p=>!p.isBot).length;
+  const maxBots=Math.max(0,16-humans-1); // always leave room for at least host
+  botCount=Math.max(0,Math.min(botCount+delta,maxBots));
+  document.getElementById('bot-count-display').textContent=botCount;
+  document.getElementById('bot-max-display').textContent=maxBots;
+  const msg=document.getElementById('bot-machine-msg');
+  if(botCount>0){
+    msg.style.display='';
+    msg.textContent=`This machine is helping ${botCount} bot${botCount===1?'':'s'} process data, as needed.`;
+    document.getElementById('bot-pace-card').style.display='';
+  } else {
+    msg.style.display='none';
+    document.getElementById('bot-pace-card').style.display='none';
+  }
+};
+
+window.updatePaceDisplay=function(){
+  document.getElementById('pace-cpu-val').textContent   =parseFloat(document.getElementById('pace-cpu').value).toFixed(2)+'s';
+  document.getElementById('pace-gpu-val').textContent   =parseFloat(document.getElementById('pace-gpu').value).toFixed(2)+'s';
+  document.getElementById('pace-seller-val').textContent=parseFloat(document.getElementById('pace-seller').value).toFixed(2)+'s';
+};
+
+// ─── Host Game ───────────────────────────────────────
+window.hostGame=async function(){
+  setError('host-error','');
+  const name=document.getElementById('host-name').value.trim();
+  if(!name)        return setError('host-error','Enter your name.');
+  if(!selectedRole) return setError('host-error','Pick a role.');
+
+  const winCondition=document.getElementById('win-condition').value;
+  const timerMinutes=parseInt(document.getElementById('timer-minutes').value)||5;
+  const pointsTarget=parseInt(document.getElementById('points-target').value)||100;
+  const code=generateCode(), playerId=generatePlayerId();
+  currentPlayer=playerId; isHost=true; currentRoom=code;
+
+  try{
+    await setDoc(doc(db,'rooms',code),{
+      code, host:playerId, state:'lobby',
+      settings:{winCondition,timerMinutes,pointsTarget},
+      teamMode:false,
+      teamScores:{A:0,B:0}, teamScore:0,
+      gpuMultiplier:{A:1,B:1},
+      botPace:{cpu:0.10,gpu:0.30,seller:0.80},
+      botOptions:{cpuMistake:false,sellerVary:false},
+      startedAt:null, createdAt:serverTimestamp()
+    });
+    await setDoc(doc(db,'rooms',code,'players',playerId),{
+      name, role:selectedRole, team:'A', isBot:false, isHost:true, joinedAt:serverTimestamp()
+    });
+    enterLobby(code,playerId,true);
+  }catch(e){ setError('host-error','Failed to create room.'); console.error(e); }
+};
+
+// ─── Find Room ───────────────────────────────────────
+window.findRoom=async function(){
+  setError('join-error','');
+  const name=document.getElementById('join-name').value.trim();
+  const code=document.getElementById('join-code').value.trim().toUpperCase();
+  if(!name)           return setError('join-error','Enter your name.');
+  if(code.length<4)   return setError('join-error','Code must be 4–7 characters.');
+  try{
+    const snap=await getDoc(doc(db,'rooms',code));
+    if(!snap.exists())              return setError('join-error','Room not found.');
+    if(snap.data().state!=='lobby') return setError('join-error','Game already in progress.');
+    currentRoom=code;
+    await refreshJoinRoleCounts(code);
+    showScreen('screen-join-role');
+  }catch(e){ setError('join-error','Could not connect. Try again.'); }
+};
+
+async function refreshJoinRoleCounts(code){
+  const snap=await getDocs(collection(db,'rooms',code,'players'));
+  const counts={network:0,cpu:0,seller:0,gpu:0};
+  snap.docs.forEach(d=>{ const r=d.data().role; if(counts[r]!==undefined) counts[r]++; });
+  for(const role of Object.keys(counts)){
+    const el=document.getElementById(`jrc-${role}`);
+    if(el) el.textContent=counts[role]===1?'1 player':`${counts[role]} players`;
+  }
+}
+
+// ─── Join Game ───────────────────────────────────────
+window.joinGame=async function(){
+  setError('join-role-error','');
+  if(!selectedRole) return setError('join-role-error','Pick a role.');
+  const name=document.getElementById('join-name').value.trim();
+  const playerId=generatePlayerId();
+  currentPlayer=playerId; isHost=false;
+  try{
+    await setDoc(doc(db,'rooms',currentRoom,'players',playerId),{
+      name, role:selectedRole, team:'A', isBot:false, isHost:false, joinedAt:serverTimestamp()
+    });
+    enterLobby(currentRoom,playerId,false);
+  }catch(e){ setError('join-role-error','Failed to join.'); }
+};
+
+// ─── Lobby ───────────────────────────────────────────
+function enterLobby(code,playerId,hosting){
+  document.getElementById('lobby-code').textContent=code;
+  const vli=document.getElementById('viewer-link-input'); if(vli) vli.value=buildViewerURL(code);
+  document.getElementById('host-settings-card').style.display=hosting?'':'none';
+  document.getElementById('assign-card').style.display       =hosting?'':'none';
+  document.getElementById('bot-card').style.display          =hosting?'':'none';
+  document.getElementById('start-btn').style.display         =hosting?'':'none';
+  document.getElementById('lobby-status').textContent=hosting
+    ?'You are the host — configure bots and start when ready.'
+    :'Waiting for host to start...';
+  if(hosting){
+    const viewerLinkRow=document.getElementById('viewer-link-row');
+    viewerLinkRow.style.display='flex';
+    // will be populated once we have the code
+  }
+  if(hosting){
+    const wc=document.getElementById('win-condition').value;
+    document.getElementById('lobby-win-condition').value=wc;
+    document.getElementById('lobby-timer-wrap').style.display =wc==='timer' ?'':'none';
+    document.getElementById('lobby-points-wrap').style.display=wc==='points'?'':'none';
+  }
+  showScreen('screen-lobby');
+  subscribeToRoom(code);
+  subscribeToPlayers(code);
+}
+
+function subscribeToRoom(code){
+  if(roomUnsubscribe) roomUnsubscribe();
+  gameStarted=false;
+  roomUnsubscribe=onSnapshot(doc(db,'rooms',code),snap=>{
+    if(!snap.exists()){ leaveRoom(); return; }
+    const data=snap.data();
+    if(data.state==='playing'&&!gameStarted){ gameStarted=true; gameEndHandled=false; startLocalGame(data); }
+    if(data.state==='ended'){ handleGameEnd(data); }
+    // Host returned everyone to the lobby for another round
+    if(data.state==='lobby'&&gameStarted){
+      gameStarted=false; gameEndHandled=false;
+      document.getElementById('hud').classList.remove('visible');
+      document.body.style.paddingTop='';
+      showScreen('screen-lobby');
+    }
+    if(data.state==='playing'){
+      const score=data.teamMode?(data.teamScores?.[myTeam]??0):(data.teamScore??0);
+      document.getElementById('hud-score').textContent=score;
+      const mult=data.teamMode?(data.gpuMultiplier?.[myTeam]??1):(data.gpuMultiplier?.A??1);
+      document.getElementById('hud-mult').textContent=mult>1?`×${mult.toFixed(1)}`:'';
+    }
+  });
+}
+
+function subscribeToPlayers(code){
+  if(playersUnsubscribe) playersUnsubscribe();
+  playersUnsubscribe=onSnapshot(collection(db,'rooms',code,'players'),snap=>{
+    lobbyPlayers=snap.docs.map(d=>({id:d.id,...d.data()}));
+    const count=lobbyPlayers.length;
+    document.getElementById('player-count').textContent=count;
+
+    // Team panel
+    if(isHost){
+      const showTeams=count>=8;
+      document.getElementById('teams-card').style.display=showTeams?'':'none';
+      document.getElementById('team-mode-label').textContent=showTeams?'· Team mode active':'';
+      if(showTeams) renderTeamPanel();
+      // update bot max
+      const humans=lobbyPlayers.filter(p=>!p.isBot).length;
+      document.getElementById('bot-max-display').textContent=Math.max(0,16-humans-1);
+    }
+
+    // Player list
+    const list=document.getElementById('player-list');
+    list.innerHTML=count===0?'<p class="waiting-text">Waiting for players...</p>'
+      :lobbyPlayers.map(p=>{
+        const m=ROLE_META[p.role]||{label:p.role,cls:'',icon:'?'};
+        const teamBadge=count>=8&&p.team?`<span class="badge team-${p.team.toLowerCase()}">${p.team}</span>`:'';
+        const botBadge=p.isBot?'<span class="badge bot">BOT</span>':'';
+        return `<div class="player-row">
+          <span class="status-dot" style="${p.isBot?'background:var(--accent2);box-shadow:0 0 8px var(--accent2);':''}"></span>
+          <span>${p.name}</span>
+          <span class="badge ${m.cls}">${m.label}</span>
+          ${botBadge}${teamBadge}
+          ${p.isHost?'<span class="host-tag">HOST</span>':''}
+        </div>`;
+      }).join('');
+
+    if(isHost) renderAssignTable();
+  });
+}
+
+// ─── Team panel ──────────────────────────────────────
+function renderTeamPanel(){
+  const listA=document.getElementById('team-a-list');
+  const listB=document.getElementById('team-b-list');
+  listA.innerHTML=''; listB.innerHTML='';
+  lobbyPlayers.forEach(p=>{
+    const team=teamAssignments[p.id]||p.team||'A';
+    const m=ROLE_META[p.role]||{label:p.role,cls:''};
+    const row=document.createElement('div');
+    row.className='team-player-row';
+    row.innerHTML=`
+      <span>${p.name}${p.isBot?' 🤖':''}</span>
+      <span class="badge ${m.cls||''}" style="font-size:.5rem;">${m.label}</span>
+      <select onchange="assignTeam('${p.id}',this.value)">
+        <option value="A" ${team==='A'?'selected':''}>Alpha</option>
+        <option value="B" ${team==='B'?'selected':''}>Beta</option>
+      </select>`;
+    (team==='B'?listB:listA).appendChild(row);
+  });
+}
+window.assignTeam=function(id,team){ teamAssignments[id]=team; renderTeamPanel(); };
+window.autoSplitTeams=function(){
+  const s=[...lobbyPlayers].sort(()=>Math.random()-.5);
+  s.forEach((p,i)=>{ teamAssignments[p.id]=i<Math.ceil(s.length/2)?'A':'B'; });
+  renderTeamPanel();
+};
+window.clearTeams=function(){ lobbyPlayers.forEach(p=>{ teamAssignments[p.id]='A'; }); renderTeamPanel(); };
+
+// ─── Assign table ────────────────────────────────────
+function renderAssignTable(){
+  const tbody=document.getElementById('assign-tbody');
+  tbody.innerHTML=lobbyPlayers.map(p=>{
+    const m=ROLE_META[p.role]||{label:p.role};
+    const nameVal=botNames[p.id]??p.name;
+    const nameCell=p.isBot
+      ?`<input type="text" value="${nameVal}" onchange="saveBotName('${p.id}',this.value)" style="padding:6px 10px;font-size:.75rem;"/>`
+      :`<span style="color:var(--dim);">${p.name}${p.isHost?' (you)':''}</span>`;
+    return `<tr>
+      <td>${p.isBot?'🤖 ':''}</td>
+      <td>${nameCell}</td>
+      <td>
+        <select id="assign-${p.id}" onchange="saveAssignment('${p.id}')">
+          <option value="">Choice (${m.label})</option>
+          <option value="network" ${hostAssignments[p.id]==='network'?'selected':''}>📡 Network</option>
+          <option value="cpu"     ${hostAssignments[p.id]==='cpu'    ?'selected':''}>⚙️ CPU</option>
+          <option value="seller"  ${hostAssignments[p.id]==='seller' ?'selected':''}>💰 Seller</option>
+          <option value="gpu"     ${hostAssignments[p.id]==='gpu'    ?'selected':''}>⚡ GPU</option>
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
+}
+window.saveAssignment=function(id){
+  const val=document.getElementById(`assign-${id}`)?.value;
+  if(val) hostAssignments[id]=val; else delete hostAssignments[id];
+};
+window.saveBotName=function(id,name){ botNames[id]=name.trim()||randomBotName(); };
+window.randomizeRoles=function(){
+  const roles=['network','cpu','seller','gpu'];
+  [...lobbyPlayers].sort(()=>Math.random()-.5).forEach((p,i)=>{ hostAssignments[p.id]=roles[i%roles.length]; });
+  renderAssignTable();
+};
+window.clearAssignments=function(){ lobbyPlayers.forEach(p=>delete hostAssignments[p.id]); renderAssignTable(); };
+
+window.updateRoomSettings=async function(){
+  if(!isHost||!currentRoom) return;
+  const winCondition=document.getElementById('lobby-win-condition').value;
+  const timerMinutes=parseInt(document.getElementById('lobby-timer').value)||5;
+  const pointsTarget=parseInt(document.getElementById('lobby-points').value)||100;
+  try{ await updateDoc(doc(db,'rooms',currentRoom),{settings:{winCondition,timerMinutes,pointsTarget}}); }
+  catch(e){ console.error(e); }
+};
+
+// ─── Start Game ──────────────────────────────────────
+window.startGame=async function(){
+  if(!isHost||!currentRoom) return;
+  setError('lobby-error','');
+
+  const humans=lobbyPlayers.filter(p=>!p.isBot).length;
+  if(humans<1) return setError('lobby-error','Need at least 1 human player.');
+  if(lobbyPlayers.length<4) return setError('lobby-error','Need at least 4 players/bots total to start.');
+
+  // GPU pace must be faster than CPU pace
+  const paceCpu   =parseFloat(document.getElementById('pace-cpu').value);
+  const paceGpu   =parseFloat(document.getElementById('pace-gpu').value);
+  const paceSeller=parseFloat(document.getElementById('pace-seller').value);
+  const hasBotGpu =lobbyPlayers.some(p=>p.isBot&&(hostAssignments[p.id]==='gpu'||(!hostAssignments[p.id]&&p.role==='gpu')));
+  const hasBotCpu =lobbyPlayers.some(p=>p.isBot&&(hostAssignments[p.id]==='cpu'||(!hostAssignments[p.id]&&p.role==='cpu')));
+  // GPU pace per word vs CPU pace per char — GPU must resolve 7 words faster than CPU would type avg word
+  // avg english word ~5 chars; GPU pace*7 should be < CPU pace*5*7
+  if(hasBotGpu&&hasBotCpu&&paceGpu>=paceCpu*5){
+    return setError('lobby-error',`GPU bot (${paceGpu}s/word) must be faster than CPU bot avg word time (${(paceCpu*5).toFixed(2)}s). Decrease GPU pace or increase CPU pace.`);
+  }
+
+  const teamMode=lobbyPlayers.length>=8;
+  const cpuMistake=document.getElementById('toggle-cpu-mistake').checked;
+  const sellerVary=document.getElementById('toggle-seller-vary').checked;
+
+  // Add bots to Firestore and apply overrides
+  const botIds=lobbyPlayers.filter(p=>p.isBot).map(p=>p.id);
+  await Promise.all(lobbyPlayers.map(p=>{
+    const role=hostAssignments[p.id]||p.role;
+    const team=teamAssignments[p.id]||p.team||'A';
+    const name=p.isBot?(botNames[p.id]||p.name):p.name;
+    return updateDoc(doc(db,'rooms',currentRoom,'players',p.id),{role,team,name});
+  }));
+
+  await updateDoc(doc(db,'rooms',currentRoom),{
+    state:'playing', teamMode,
+    botPace:{cpu:paceCpu,gpu:paceGpu,seller:paceSeller},
+    botOptions:{cpuMistake,sellerVary},
+    botIds,
+    startedAt:serverTimestamp()
+  });
+};
+
+// ─── Leave ───────────────────────────────────────────
+window.leaveRoom=async function(){
+  if(roomUnsubscribe)   roomUnsubscribe();
+  if(playersUnsubscribe) playersUnsubscribe();
+  if(taskUnsubscribe)   taskUnsubscribe();
+  if(hudTimerInterval)  clearInterval(hudTimerInterval);
+  botIntervals.forEach(clearInterval); botIntervals=[];
+  if(currentRoom&&currentPlayer){
+    try{
+      await deleteDoc(doc(db,'rooms',currentRoom,'players',currentPlayer));
+      if(isHost) await deleteDoc(doc(db,'rooms',currentRoom));
+    }catch(e){}
+  }
+  currentRoom=null; currentPlayer=null; isHost=false;
+  selectedRole=null; myRole=null; myTeam=null;
+  gameStarted=false; cpuCompleting=false;
+  document.getElementById('hud').classList.remove('visible');
+  document.body.style.paddingTop='';
+  showScreen('screen-menu');
+};
+
+// ════════════════════════════════════════════════════
+//  GAME START
+// ════════════════════════════════════════════════════
+async function startLocalGame(roomData){
+  const mySnap=await getDoc(doc(db,'rooms',currentRoom,'players',currentPlayer));
+  const myData=mySnap.data();
+  myRole=myData.role; myTeam=myData.team||'A';
+
+  // HUD
+  document.getElementById('hud').classList.add('visible');
+  document.body.style.paddingTop='52px';
+  const m=ROLE_META[myRole]||{label:myRole,icon:'?'};
+  document.getElementById('hud-role-badge').innerHTML=`<span class="badge ${m.cls}">${m.icon} ${m.label}</span>`;
+
+  // Only show team label if genuinely multiple teams
+  const allPlayers=await getDocs(collection(db,'rooms',currentRoom,'players'));
+  const teams=new Set(allPlayers.docs.map(d=>d.data().team||'A'));
+  if(roomData.teamMode&&teams.size>1){
+    document.getElementById('hud-team-label').innerHTML=`<span class="badge team-${myTeam.toLowerCase()}">TEAM ${myTeam}</span>`;
+  }
+
+  const score=roomData.teamMode?(roomData.teamScores?.[myTeam]??0):(roomData.teamScore??0);
+  document.getElementById('hud-score').textContent=score;
+
+  const settings=roomData.settings||{};
+  if(settings.winCondition==='timer'&&roomData.startedAt)
+    startHudTimer(roomData.startedAt.toMillis(),settings.timerMinutes*60*1000);
+
+  // Show host end button if host-decision mode
+  if(isHost&&(roomData.settings?.winCondition==='host')){
+    document.getElementById('host-end-btn').classList.add('visible');
+  }
+  // Route human player
+  if(myRole==='network'){
+    showScreen('screen-network');
+  } else if(myRole==='cpu'){
+    showScreen('screen-waiting');
+    document.getElementById('waiting-msg').textContent='Waiting for the Network to write a sentence...';
+    listenForCpuTask();
+  } else if(myRole==='seller'){
+    showScreen('screen-waiting');
+    document.getElementById('waiting-msg').textContent='Waiting for the CPU to finish processing...';
+    listenForSellerTask();
+  } else if(myRole==='gpu'){
+    showScreen('screen-waiting');
+    document.getElementById('waiting-msg').textContent='Waiting for a sentence to process...';
+    listenForGpuTask();
+  }
+
+  // Host also runs all bots
+  if(isHost) startAllBots(roomData);
+}
+
+function startHudTimer(startMs,durationMs){
+  if(hudTimerInterval) clearInterval(hudTimerInterval);
+  const el=document.getElementById('hud-timer');
+  hudTimerInterval=setInterval(()=>{
+    const remaining=Math.max(0,durationMs-(Date.now()-startMs));
+    const mins=Math.floor(remaining/60000);
+    const secs=Math.floor((remaining%60000)/1000);
+    el.textContent=`${mins}:${secs.toString().padStart(2,'0')}`;
+    if(remaining===0){
+      clearInterval(hudTimerInterval);
+      // Host writes the ended state so everyone transitions together
+      if(isHost&&currentRoom){
+        updateDoc(doc(db,'rooms',currentRoom),{state:'ended'}).catch(()=>{});
+      }
+    }
+  },500);
+}
+
+// ════════════════════════════════════════════════════
+//  BOT ENGINE  (runs on host only)
+// ════════════════════════════════════════════════════
+async function startAllBots(roomData){
+  const playersSnap=await getDocs(collection(db,'rooms',currentRoom,'players'));
+  const bots=playersSnap.docs.filter(d=>d.data().isBot).map(d=>({id:d.id,...d.data()}));
+  const pace=roomData.botPace||{cpu:0.10,gpu:0.30,seller:0.80};
+  const opts=roomData.botOptions||{cpuMistake:false,sellerVary:false};
+
+  for(const bot of bots){
+    if(bot.role==='network') startNetworkBot(bot);
+    else if(bot.role==='cpu') startCpuBot(bot,pace.cpu,opts.cpuMistake);
+    else if(bot.role==='gpu') startGpuBot(bot,pace.gpu);
+    else if(bot.role==='seller') startSellerBot(bot,pace.seller,opts.sellerVary);
+  }
+}
+
+// ── Network Bot ──────────────────────────────────────
+function startNetworkBot(bot){
+  const fire=async()=>{
+    if(!currentRoom) return;
+    // Build sentence: 9–13 words, occasionally up to 16
+    const len=Math.random()<0.15 ? 12+Math.floor(Math.random()*5) : 9+Math.floor(Math.random()*3);
+    const words=[];
+    for(let i=0;i<len;i++) words.push(WORD_BANK[Math.floor(Math.random()*WORD_BANK.length)]);
+    words[0]=words[0].charAt(0).toUpperCase()+words[0].slice(1);
+    const text=words.join(' ')+'.';
+
+    try{
+      const playersSnap=await getDocs(collection(db,'rooms',currentRoom,'players'));
+      const roomSnap=await getDoc(doc(db,'rooms',currentRoom));
+      if(!roomSnap.exists()||roomSnap.data().state!=='playing') return;
+      const teamMode=roomSnap.data().teamMode;
+      const teammates=teamMode
+        ?playersSnap.docs.filter(d=>d.data().team===bot.team)
+        :playersSnap.docs;
+
+      const cpus   =teammates.filter(d=>d.data().role==='cpu').map(d=>d.id);
+      const gpus   =teammates.filter(d=>d.data().role==='gpu').map(d=>d.id);
+      const sellers=teammates.filter(d=>d.data().role==='seller').map(d=>d.id);
+      if(cpus.length===0) return;
+
+      const tasksSnap=await getDocs(collection(db,'rooms',currentRoom,'sentences'));
+      const activeCpus=new Set(tasksSnap.docs.filter(d=>d.data().stage==='cpu'&&d.data().assignedCpu).map(d=>d.data().assignedCpu));
+      const inactive=cpus.filter(id=>!activeCpus.has(id));
+      const pool=inactive.length>0?inactive:cpus;
+      const assignedCpu=pool[Math.floor(Math.random()*pool.length)];
+      const assignedGpu=gpus.length>0?gpus[Math.floor(Math.random()*gpus.length)]:null;
+
+      await addDoc(collection(db,'rooms',currentRoom,'sentences'),{
+        text, stage:'cpu', team:bot.team||'A',
+        assignedCpu, assignedSeller:null, assignedGpu,
+        allSellers:sellers,
+        gpuCutsApplied:0, gpuTaskDone:false, cpuDone:false,
+        createdAt:serverTimestamp(), authorId:bot.id
+      });
+    }catch(e){ console.error('[BotNetwork]',e); }
+
+    // Schedule next sentence after a gap (8–20s)
+    const delay=rnd(8000,20000);
+    const tid=setTimeout(fire,delay);
+    botIntervals.push(tid);
+  };
+  // First sentence after a short warmup
+  const tid=setTimeout(fire,rnd(2000,5000));
+  botIntervals.push(tid);
+}
+
+// ── CPU Bot ──────────────────────────────────────────
+function startCpuBot(bot,secPerChar,mistakeEnabled){
+  // Listen for sentences assigned to this bot
+  const unsub=onSnapshot(collection(db,'rooms',currentRoom,'sentences'),snap=>{
+    const mine=snap.docs.find(d=>{
+      const data=d.data();
+      return data.stage==='cpu'&&data.assignedCpu===bot.id&&!data.cpuDone;
+    });
+    if(mine) runCpuBotTask(bot,mine.id,mine.data(),secPerChar,mistakeEnabled);
+  });
+  botIntervals.push({clear:unsub}); // store for cleanup (unsub is a function)
+  // Actually store it properly:
+  // We use a workaround — store unsubscribers in a separate array
+  window._botUnsubs = window._botUnsubs||[];
+  window._botUnsubs.push(unsub);
+}
+
+let activeBotCpuSentences=new Set();
+async function runCpuBotTask(bot,sentenceId,data,secPerChar,mistakeEnabled){
+  if(activeBotCpuSentences.has(sentenceId)) return;
+  activeBotCpuSentences.add(sentenceId);
+
+  const fullText=data.text;
+  let target=buildCpuTarget(fullText,data.gpuCutsApplied||0);
+  let typed='';
+  let charIndex=0;
+
+  const typeNext=async()=>{
+    if(!currentRoom) return;
+    // Refresh cuts in case GPU helped
+    try{
+      const sentSnap=await getDoc(doc(db,'rooms',currentRoom,'sentences',sentenceId));
+      if(!sentSnap.exists()||sentSnap.data().cpuDone||sentSnap.data().stage!=='cpu'){
+        activeBotCpuSentences.delete(sentenceId); return;
+      }
+      const cuts=sentSnap.data().gpuCutsApplied||0;
+      target=buildCpuTarget(fullText,cuts);
+      if(charIndex>=target.length){ await completeBotCpuTask(bot,sentenceId); return; }
+    }catch(e){ activeBotCpuSentences.delete(sentenceId); return; }
+
+    // Mistake chance: 1/44
+    if(mistakeEnabled&&Math.random()<1/44){
+      charIndex=Math.max(0,charIndex-7);
+    } else {
+      charIndex++;
+    }
+
+    // Write live progress so the viewer mirrors it exactly (fixes desync)
+    try{
+      await updateDoc(doc(db,'rooms',currentRoom,'sentences',sentenceId),{
+        botProgress:{ typed:Math.min(charIndex,target.length), total:target.length }
+      });
+    }catch(e){}
+
+    if(charIndex>=target.length){
+      await completeBotCpuTask(bot,sentenceId);
+    } else {
+      const jitter=rnd(0.7,1.3);
+      const tid=setTimeout(typeNext,secPerChar*jitter*1000);
+      botIntervals.push(tid);
+    }
+  };
+
+  const tid=setTimeout(typeNext,secPerChar*1000);
+  botIntervals.push(tid);
+}
+
+async function completeBotCpuTask(bot,sentenceId){
+  activeBotCpuSentences.delete(sentenceId);
+  try{
+    const playersSnap=await getDocs(collection(db,'rooms',currentRoom,'players'));
+    const sentSnap=await getDoc(doc(db,'rooms',currentRoom,'sentences',sentenceId));
+    if(!sentSnap.exists()||sentSnap.data().cpuDone) return;
+    const sentTeam=sentSnap.data().team||'A';
+    const sellers=playersSnap.docs.filter(d=>d.data().role==='seller'&&(d.data().team||'A')===sentTeam).map(d=>d.id);
+    if(sellers.length===0) return;
+
+    const allSentSnap=await getDocs(collection(db,'rooms',currentRoom,'sentences'));
+    const activeSellers=new Set(allSentSnap.docs.filter(d=>d.data().stage==='seller'&&d.data().assignedSeller).map(d=>d.data().assignedSeller));
+    const inactive=sellers.filter(id=>!activeSellers.has(id));
+    const pool=inactive.length>0?inactive:sellers;
+    const assignedSeller=pool[Math.floor(Math.random()*pool.length)];
+
+    await updateDoc(doc(db,'rooms',currentRoom,'sentences',sentenceId),{
+      stage:'seller', assignedSeller, cpuDone:true
+    });
+  }catch(e){ console.error('[BotCPU complete]',e); }
+}
+
+// ── GPU Bot ──────────────────────────────────────────
+function startGpuBot(bot,secPerWord){
+  const unsub=onSnapshot(collection(db,'rooms',currentRoom,'sentences'),snap=>{
+    if(!currentRoom) return;
+    // Abort check
+    if(activeBotGpuSentence&&activeBotGpuSentence.bot===bot.id){
+      const cur=snap.docs.find(d=>d.id===activeBotGpuSentence.id);
+      if(cur&&cur.data().cpuDone){ activeBotGpuSentence=null; }
+    }
+    if(activeBotGpuSentence&&activeBotGpuSentence.bot===bot.id) return;
+
+    const mine=snap.docs.find(d=>{
+      const data=d.data();
+      return data.stage==='cpu'&&data.assignedGpu===bot.id&&!data.gpuTaskDone&&!data.cpuDone;
+    });
+    if(mine&&(!activeBotGpuSentence||activeBotGpuSentence.bot!==bot.id)){
+      activeBotGpuSentence={id:mine.id,bot:bot.id};
+      runGpuBotTask(bot,mine.id,mine.data().text,secPerWord);
+    }
+  });
+  window._botUnsubs=window._botUnsubs||[];
+  window._botUnsubs.push(unsub);
+}
+
+let activeBotGpuSentence=null;
+async function runGpuBotTask(bot,sentenceId,text,secPerWord){
+  const words=text.trim().split(/\s+/);
+  const shuffled=[...words].sort(()=>Math.random()-.5);
+  const subset=shuffled.slice(0,Math.min(7,shuffled.length));
+  let idx=0;
+
+  const submitNext=async()=>{
+    if(!currentRoom||!activeBotGpuSentence||activeBotGpuSentence.id!==sentenceId) return;
+    idx++;
+    // Write live progress for the viewer
+    try{
+      await updateDoc(doc(db,'rooms',currentRoom,'sentences',sentenceId),{
+        botProgress:{ placed:idx, total:subset.length, gpuWords:subset }
+      });
+    }catch(e){}
+    if(idx<subset.length){
+      const jitter=rnd(0.8,1.2);
+      const tid=setTimeout(submitNext,secPerWord*jitter*1000);
+      botIntervals.push(tid);
+    } else {
+      // All words "typed" — apply boost
+      try{
+        const sentSnap=await getDoc(doc(db,'rooms',currentRoom,'sentences',sentenceId));
+        if(!sentSnap.exists()||sentSnap.data().cpuDone||sentSnap.data().gpuTaskDone){ activeBotGpuSentence=null; return; }
+        const roomSnap=await getDoc(doc(db,'rooms',currentRoom));
+        const teamMode=roomSnap.data().teamMode;
+        const sentTeam=sentSnap.data().team||'A';
+        const currentMult=teamMode?(roomSnap.data().gpuMultiplier?.[sentTeam]??1):(roomSnap.data().gpuMultiplier?.A??1);
+        const newMult=Math.round(currentMult*1.1*100)/100;
+        const cuts=(sentSnap.data().gpuCutsApplied||0)+1;
+        const multUpdate=teamMode?{[`gpuMultiplier.${sentTeam}`]:newMult}:{'gpuMultiplier.A':newMult};
+        await Promise.all([
+          updateDoc(doc(db,'rooms',currentRoom),multUpdate),
+          updateDoc(doc(db,'rooms',currentRoom,'sentences',sentenceId),{gpuCutsApplied:cuts,gpuTaskDone:true})
+        ]);
+      }catch(e){ console.error('[BotGPU]',e); }
+      activeBotGpuSentence=null;
+    }
+  };
+
+  const tid=setTimeout(submitNext,secPerWord*1000);
+  botIntervals.push(tid);
+}
+
+// ── Seller Bot ───────────────────────────────────────
+function startSellerBot(bot,secPerClick,vary){
+  const unsub=onSnapshot(collection(db,'rooms',currentRoom,'sentences'),snap=>{
+    const mine=snap.docs.find(d=>{
+      const data=d.data();
+      return data.stage==='seller'&&data.assignedSeller===bot.id;
+    });
+    if(mine&&(!activeBotSellerSentences.has(mine.id))){
+      activeBotSellerSentences.add(mine.id);
+      runSellerBotTask(bot,mine.id,mine.data().text,mine.data().team||'A',secPerClick,vary);
+    }
+  });
+  window._botUnsubs=window._botUnsubs||[];
+  window._botUnsubs.push(unsub);
+}
+
+let activeBotSellerSentences=new Set();
+async function runSellerBotTask(bot,sentenceId,text,team,secPerClick,vary){
+  const words=text.trim().split(/\s+/);
+  let idx=0;
+
+  const clickNext=async()=>{
+    if(!currentRoom||idx>=words.length) return;
+    const word=words[idx];
+    const pts=Math.ceil(word.replace(/[^a-zA-Z]/g,'').length/3);
+    idx++;
+
+    try{
+      const roomSnap=await getDoc(doc(db,'rooms',currentRoom));
+      if(!roomSnap.exists()||roomSnap.data().state!=='playing'){ activeBotSellerSentences.delete(sentenceId); return; }
+      const roomData=roomSnap.data();
+      const teamMode=roomData.teamMode;
+      const mult=teamMode?(roomData.gpuMultiplier?.[team]??1):(roomData.gpuMultiplier?.A??1);
+      const earned=Math.round(pts*mult);
+      const scoreUpdate=teamMode
+        ?{[`teamScores.${team}`]:(roomData.teamScores?.[team]??0)+earned}
+        :{teamScore:(roomData.teamScore??0)+earned};
+      await updateDoc(doc(db,'rooms',currentRoom),scoreUpdate);
+    }catch(e){ console.error('[BotSeller]',e); }
+
+    // Write live progress for the viewer
+    try{
+      await updateDoc(doc(db,'rooms',currentRoom,'sentences',sentenceId),{
+        botProgress:{ clicked:idx, total:words.length }
+      });
+    }catch(e){}
+
+    if(idx>=words.length){
+      // Done with sentence
+      try{
+        await updateDoc(doc(db,'rooms',currentRoom,'sentences',sentenceId),{stage:'complete'});
+      }catch(e){}
+      activeBotSellerSentences.delete(sentenceId);
+    } else {
+      // Cooldown: max(0.5s, secPerClick with optional ±30% vary)
+      let delay=secPerClick;
+      if(vary) delay*=rnd(0.7,1.3);
+      delay=Math.max(0.5,delay);
+      const tid=setTimeout(clickNext,delay*1000);
+      botIntervals.push(tid);
+    }
+  };
+
+  // First click after initial pace
+  let firstDelay=secPerClick;
+  if(vary) firstDelay*=rnd(0.7,1.3);
+  firstDelay=Math.max(0.5,firstDelay);
+  const tid=setTimeout(clickNext,firstDelay*1000);
+  botIntervals.push(tid);
+}
+
+// ════════════════════════════════════════════════════
+//  NETWORK (human)
+// ════════════════════════════════════════════════════
+const PUNCT_RE=/[.?!;:,]/g;
+window.validateNetworkInput=function(){
+  const text=document.getElementById('network-input').value;
+  const words=text.trim().split(/\s+/).filter(Boolean);
+  const sentences=text.trim().split(/[.?!]+/).filter(s=>s.trim().length>0);
+  const punctCount=(text.match(PUNCT_RE)||[]).length;
+  const okWords=words.length>=9, okSentences=sentences.length<=3, okPunct=punctCount<=3;
+  setVCheck('vcheck-words',okWords); setVCheck('vcheck-sentences',okSentences); setVCheck('vcheck-punct',okPunct);
+  document.getElementById('network-char-count').textContent=`${words.length} words · ${punctCount} punctuation`;
+  document.getElementById('network-submit-btn').disabled=!(okWords&&okSentences&&okPunct);
+  setError('network-error','');
+};
+function setVCheck(id,ok){ const el=document.getElementById(id); el.classList.remove('ok','bad'); el.classList.add(ok?'ok':'bad'); }
+
+window.submitSentence=async function(){
+  const text=document.getElementById('network-input').value.trim();
+  if(!text) return;
+  setError('network-error','');
+  try{
+    const playersSnap=await getDocs(collection(db,'rooms',currentRoom,'players'));
+    const roomSnap=await getDoc(doc(db,'rooms',currentRoom));
+    const teamMode=roomSnap.data().teamMode;
+    const teammates=teamMode?playersSnap.docs.filter(d=>d.data().team===myTeam):playersSnap.docs;
+    const cpus   =teammates.filter(d=>d.data().role==='cpu').map(d=>d.id);
+    const gpus   =teammates.filter(d=>d.data().role==='gpu').map(d=>d.id);
+    const sellers=teammates.filter(d=>d.data().role==='seller').map(d=>d.id);
+    if(cpus.length===0) return setError('network-error','No CPU players on your team!');
+    const tasksSnap=await getDocs(collection(db,'rooms',currentRoom,'sentences'));
+    const activeCpus=new Set(tasksSnap.docs.filter(d=>d.data().stage==='cpu'&&d.data().assignedCpu&&d.data().team===myTeam).map(d=>d.data().assignedCpu));
+    const inactive=cpus.filter(id=>!activeCpus.has(id));
+    const pool=inactive.length>0?inactive:cpus;
+    const assignedCpu=pool[Math.floor(Math.random()*pool.length)];
+    const assignedGpu=gpus.length>0?gpus[Math.floor(Math.random()*gpus.length)]:null;
+    await addDoc(collection(db,'rooms',currentRoom,'sentences'),{
+      text, stage:'cpu', team:myTeam, assignedCpu, assignedSeller:null, assignedGpu,
+      allSellers:sellers, gpuCutsApplied:0, gpuTaskDone:false, cpuDone:false,
+      createdAt:serverTimestamp(), authorId:currentPlayer
+    });
+    SFX.transmit(); setSuccess('network-success','✓ Transmitted! Write another...');
+    document.getElementById('network-input').value='';
+    document.getElementById('network-submit-btn').disabled=true;
+    ['vcheck-words','vcheck-sentences','vcheck-punct'].forEach(id=>document.getElementById(id).classList.remove('ok','bad'));
+    document.getElementById('network-char-count').textContent='0 words';
+    setTimeout(()=>setSuccess('network-success',''),3000);
+  }catch(e){ setError('network-error','Failed to transmit.'); console.error(e); }
+};
+
+// ════════════════════════════════════════════════════
+//  CPU (human)
+// ════════════════════════════════════════════════════
+function listenForCpuTask(){
+  if(taskUnsubscribe) taskUnsubscribe();
+  taskUnsubscribe=onSnapshot(collection(db,'rooms',currentRoom,'sentences'),snap=>{
+    const mine=snap.docs.find(d=>{
+      const data=d.data();
+      return data.stage==='cpu'&&data.assignedCpu===currentPlayer&&!data.cpuDone;
+    });
+    if(mine&&mine.id!==cpuSentenceId){ cpuSentenceId=mine.id; startCpuTask(mine.data().text,mine.data().gpuCutsApplied||0); }
+    if(mine&&mine.id===cpuSentenceId){
+      const cuts=mine.data().gpuCutsApplied||0;
+      const newTarget=buildCpuTarget(mine.data().text,cuts);
+      if(newTarget!==cpuTarget) applyGpuCut(mine.data().text,cuts);
+    }
+  });
+}
+
+function buildCpuTarget(fullText,cuts){
+  if(cuts===0) return fullText;
+  const words=fullText.trim().split(/\s+/);
+  return words.slice(0,Math.max(1,words.length-cuts*7)).join(' ');
+}
+function applyGpuCut(fullText,cuts){
+  const t=buildCpuTarget(fullText,cuts);
+  if(t===cpuTarget) return;
+  cpuTarget=t;
+  if(cpuTyped.length>cpuTarget.length) cpuTyped=cpuTyped.slice(0,cpuTarget.length);
+  renderCpuDisplay();
+  SFX.gpuBoost(); showToast('gpu-assist-toast','⚡ GPU ASSIST — WORDS REMOVED');
+}
+function startCpuTask(text,cuts){ cpuTarget=buildCpuTarget(text,cuts); cpuTyped=''; showScreen('screen-cpu'); renderCpuDisplay(); focusCpuInput(); }
+window.focusCpuInput=function(){ document.getElementById('cpu-hidden-input').focus(); };
+
+const _cpuInput=document.getElementById('cpu-hidden-input');
+if(_cpuInput) _cpuInput.addEventListener('keydown',function(e){
+  if(!cpuTarget) return;
+  if(e.key==='Backspace'){ e.preventDefault(); return; }
+  if(e.key.length!==1) return;
+  e.preventDefault();
+  if(e.key===cpuTarget[cpuTyped.length]){
+    SFX.keyTick();
+    cpuTyped+=e.key;
+    if(cpuTyped===cpuTarget){ completeCpuTask(); return; }
+  } else {
+    cpuTyped=cpuTyped.slice(0,Math.max(0,cpuTyped.length-7));
+    SFX.mistake(); flash('red'); shakeEl(document.getElementById('cpu-display'));
+    showToast('penalty-toast','−7 LETTERS');
+  }
+  renderCpuDisplay(); updateCpuProgress();
+});
+// end cpu input guard
+
+function renderCpuDisplay(){
+  let html='';
+  for(let i=0;i<cpuTarget.length;i++){
+    const ch=cpuTarget[i]===' '?'&nbsp;':cpuTarget[i];
+    if(i<cpuTyped.length)       html+=`<span class="char-done">${ch}</span>`;
+    else if(i===cpuTyped.length) html+=`<span class="char-cursor"></span><span class="char-todo">${ch}</span>`;
+    else                         html+=`<span class="char-todo">${ch}</span>`;
+  }
+  if(cpuTyped.length===cpuTarget.length) html+=`<span class="char-cursor"></span>`;
+  document.getElementById('cpu-display').innerHTML=html;
+}
+function updateCpuProgress(){
+  document.getElementById('cpu-progress').textContent=cpuTarget.length>0?Math.round(cpuTyped.length/cpuTarget.length*100)+'%':'0%';
+}
+
+async function completeCpuTask(){
+  if(cpuCompleting) return;
+  cpuCompleting=true;
+  const doneSentenceId=cpuSentenceId;
+  cpuSentenceId=null; cpuTyped=''; cpuTarget='';
+  showScreen('screen-waiting');
+  document.getElementById('waiting-msg').textContent='Passing to Seller...';
+  SFX.transmit(); flash('green');
+  if(!doneSentenceId){ cpuCompleting=false; listenForCpuTask(); return; }
+  try{
+    const sentSnap=await getDoc(doc(db,'rooms',currentRoom,'sentences',doneSentenceId));
+    if(!sentSnap.exists()){ cpuCompleting=false; listenForCpuTask(); return; }
+    const playersSnap=await getDocs(collection(db,'rooms',currentRoom,'players'));
+    const sentTeam=sentSnap.data().team||'A';
+    const sellers=playersSnap.docs.filter(d=>d.data().role==='seller'&&(d.data().team||'A')===sentTeam).map(d=>d.id);
+    if(sellers.length===0){ cpuCompleting=false; listenForCpuTask(); return; }
+    const allSentSnap=await getDocs(collection(db,'rooms',currentRoom,'sentences'));
+    const activeSellers=new Set(allSentSnap.docs.filter(d=>d.data().stage==='seller'&&d.data().assignedSeller).map(d=>d.data().assignedSeller));
+    const inactive=sellers.filter(id=>!activeSellers.has(id));
+    const pool=inactive.length>0?inactive:sellers;
+    await updateDoc(doc(db,'rooms',currentRoom,'sentences',doneSentenceId),{stage:'seller',assignedSeller:pool[Math.floor(Math.random()*pool.length)],cpuDone:true});
+  }catch(e){ console.error('[CPU]',e); }
+  cpuCompleting=false; listenForCpuTask();
+}
+
+// ════════════════════════════════════════════════════
+//  SELLER (human)
+// ════════════════════════════════════════════════════
+function listenForSellerTask(){
+  if(taskUnsubscribe) taskUnsubscribe();
+  taskUnsubscribe=onSnapshot(collection(db,'rooms',currentRoom,'sentences'),snap=>{
+    const mine=snap.docs.find(d=>d.data().stage==='seller'&&d.data().assignedSeller===currentPlayer);
+    if(mine&&mine.id!==sellerSentenceId){ sellerSentenceId=mine.id; startSellerTask(mine.data().text,mine.data().team||'A'); }
+  });
+}
+function startSellerTask(text,team){
+  sellerSentenceScore=0;
+  document.getElementById('seller-sentence-score').textContent='+0 pts';
+  document.getElementById('seller-word-bank').innerHTML=text.trim().split(/\s+/).map(word=>{
+    const pts=Math.ceil(word.replace(/[^a-zA-Z]/g,'').length/3);
+    return `<div class="word-chip" data-pts="${pts}" data-team="${team}" onclick="clickWord(this)">${word}</div>`;
+  }).join('');
+  showScreen('screen-seller');
+}
+window.clickWord=async function(el){
+  if(el.classList.contains('clicked')||el.classList.contains('cooling')||sellerCooling) return;
+  sellerCooling=true; el.classList.add('cooling');
+  const pts=parseInt(el.dataset.pts), team=el.dataset.team||myTeam;
+  const popup=document.createElement('div'); popup.className='points-popup'; popup.textContent=`+${pts}`; el.appendChild(popup);
+  setTimeout(()=>popup.remove(),900);
+  const bar=document.createElement('div'); bar.className='cooldown-bar'; el.appendChild(bar);
+  setTimeout(async()=>{
+    el.classList.remove('cooling'); el.classList.add('clicked'); el.classList.add('popping'); sellerCooling=false;
+    SFX.wordClick();
+    sellerSentenceScore+=pts;
+    document.getElementById('seller-sentence-score').textContent=`+${sellerSentenceScore} pts`;
+    const allDone=[...document.querySelectorAll('#seller-word-bank .word-chip')].every(c=>c.classList.contains('clicked'));
+    const roomSnap=await getDoc(doc(db,'rooms',currentRoom));
+    const roomData=roomSnap.data(), teamMode=roomData.teamMode;
+    const mult=teamMode?(roomData.gpuMultiplier?.[team]??1):(roomData.gpuMultiplier?.A??1);
+    const earned=Math.round(pts*mult);
+    const scoreUpdate=teamMode?{[`teamScores.${team}`]:(roomData.teamScores?.[team]??0)+earned}:{teamScore:(roomData.teamScore??0)+earned};
+    await updateDoc(doc(db,'rooms',currentRoom),scoreUpdate);
+    if(allDone){
+      await updateDoc(doc(db,'rooms',currentRoom,'sentences',sellerSentenceId),{stage:'complete'});
+      sellerSentenceId=null;
+      SFX.sentenceComplete(); flash('gold'); showBanner('✓ SENTENCE COMPLETE'); scorePop(`+${sellerSentenceScore}`);
+      setTimeout(()=>{ showScreen('screen-waiting'); document.getElementById('waiting-msg').textContent='Waiting for the CPU to finish processing...'; listenForSellerTask(); },600);
+    }
+  },500);
+};
+
+// ════════════════════════════════════════════════════
+//  GPU (human)
+// ════════════════════════════════════════════════════
+function listenForGpuTask(){
+  if(taskUnsubscribe) taskUnsubscribe();
+  taskUnsubscribe=onSnapshot(collection(db,'rooms',currentRoom,'sentences'),snap=>{
+    if(gpuSentenceId){
+      const active=snap.docs.find(d=>d.id===gpuSentenceId);
+      if(active&&active.data().cpuDone){
+        gpuSentenceId=null; gpuWords=[];
+        SFX.gpuAbort(); showToast('gpu-abort-toast','⚙️ CPU FINISHED — TASK ENDED');
+        showScreen('screen-waiting');
+        document.getElementById('waiting-msg').textContent='CPU finished early. Waiting for next sentence...';
+      }
+    }
+    if(!gpuSentenceId){
+      const mine=snap.docs.find(d=>{
+        const data=d.data();
+        return data.stage==='cpu'&&data.assignedGpu===currentPlayer&&!data.gpuTaskDone&&!data.cpuDone;
+      });
+      if(mine){ gpuSentenceId=mine.id; startGpuTask(mine.data().text); }
+    }
+  });
+}
+function startGpuTask(text){
+  const shuffled=[...text.trim().split(/\s+/)].sort(()=>Math.random()-.5);
+  gpuWords=shuffled.slice(0,Math.min(7,shuffled.length));
+  document.getElementById('gpu-scramble-display').innerHTML=gpuWords.map(w=>`<span class="scramble-word">${w}</span>`).join('');
+  document.getElementById('gpu-word-inputs').innerHTML=gpuWords.map((w,i)=>`
+    <div class="gpu-word-row" id="gpu-row-${i}">
+      <span style="color:var(--dim);min-width:20px;">${i+1}.</span>
+      <input type="text" id="gpu-input-${i}" placeholder="Type word ${i+1}..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+    </div>`).join('');
+  setError('gpu-error',''); showScreen('screen-gpu');
+}
+window.submitGpu=async function(){
+  if(!gpuSentenceId) return;
+  setError('gpu-error','');
+  let allCorrect=true;
+  gpuWords.forEach((word,i)=>{
+    const input=document.getElementById(`gpu-input-${i}`), row=document.getElementById(`gpu-row-${i}`);
+    const correct=input.value.trim()===word; if(!correct) allCorrect=false;
+    row.querySelectorAll('.gpu-tick,.gpu-cross').forEach(e=>e.remove());
+    const mark=document.createElement('span'); mark.className=correct?'gpu-tick':'gpu-cross'; mark.textContent=correct?'✓':'✗'; row.appendChild(mark);
+  });
+  if(!allCorrect) return setError('gpu-error','Some words were wrong — try again!');
+  try{
+    const sentSnap=await getDoc(doc(db,'rooms',currentRoom,'sentences',gpuSentenceId));
+    if(!sentSnap.exists()||sentSnap.data().cpuDone){ gpuSentenceId=null; gpuWords=[]; showScreen('screen-waiting'); document.getElementById('waiting-msg').textContent='CPU already finished.'; listenForGpuTask(); return; }
+    const roomSnap=await getDoc(doc(db,'rooms',currentRoom)), roomData=roomSnap.data();
+    const teamMode=roomData.teamMode, sentTeam=sentSnap.data().team||'A';
+    const currentMult=teamMode?(roomData.gpuMultiplier?.[sentTeam]??1):(roomData.gpuMultiplier?.A??1);
+    const newMult=Math.round(currentMult*1.1*100)/100;
+    const cuts=(sentSnap.data().gpuCutsApplied||0)+1, doneId=gpuSentenceId; gpuSentenceId=null;
+    const multUpdate=teamMode?{[`gpuMultiplier.${sentTeam}`]:newMult}:{'gpuMultiplier.A':newMult};
+    await Promise.all([
+      updateDoc(doc(db,'rooms',currentRoom),multUpdate),
+      updateDoc(doc(db,'rooms',currentRoom,'sentences',doneId),{gpuCutsApplied:cuts,gpuTaskDone:true})
+    ]);
+    SFX.gpuBoost(); flash('green'); multBump(); showBanner('⚡ MULTIPLIER BOOSTED!');
+    showScreen('screen-waiting'); document.getElementById('waiting-msg').textContent='⚡ Boost applied! Waiting for next sentence...';
+    setTimeout(()=>listenForGpuTask(),500);
+  }catch(e){ console.error('[GPU]',e); }
+};
+
+// ─── Add bots to Firestore during host setup ────────
+// Bots need to be in Firestore so all clients see them.
+// We create them when host enters the lobby, then update count on change.
+let currentBotDocs=[]; // {id, docRef}
+
+async function syncBotDocs(){
+  if(!isHost||!currentRoom) return;
+  const humans=lobbyPlayers.filter(p=>!p.isBot).length;
+  const maxBots=Math.max(0,16-humans-1);
+  botCount=Math.min(botCount,maxBots);
+  document.getElementById('bot-count-display').textContent=botCount;
+
+  const existingBots=lobbyPlayers.filter(p=>p.isBot);
+
+  // Remove excess bots
+  while(existingBots.length>botCount){
+    const bot=existingBots.pop();
+    try{ await deleteDoc(doc(db,'rooms',currentRoom,'players',bot.id)); }catch(e){}
+  }
+
+  // Add missing bots
+  while(existingBots.length<botCount){
+    const botId=generatePlayerId();
+    const name=randomBotName();
+    const roles=['network','cpu','seller','gpu'];
+    const role=roles[existingBots.length%roles.length];
+    try{
+      await setDoc(doc(db,'rooms',currentRoom,'players',botId),{
+        name, role, team:'A', isBot:true, isHost:false, joinedAt:serverTimestamp()
+      });
+      existingBots.push({id:botId,name,role,team:'A',isBot:true});
+    }catch(e){ break; }
+  }
+}
+
+// Override changeBotCount to also sync Firestore
+const _origChangeBotCount=window.changeBotCount;
+window.changeBotCount=function(delta){
+  _origChangeBotCount(delta);
+  syncBotDocs();
+};
+
+
+// ════════════════════════════════════════════════════
+//  BLOB BACKGROUND
+// ════════════════════════════════════════════════════
+(function(){
+  const canvas=document.getElementById('blob-canvas');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  let W,H,mouse={x:-999,y:-999};
+  const BLOBS=[
+    {x:.2,y:.3,r:.32,vx:.0003,vy:.0002,col:'rgba(0,255,224,'},
+    {x:.7,y:.2,r:.28,vx:-.0002,vy:.0004,col:'rgba(123,97,255,'},
+    {x:.5,y:.7,r:.35,vx:.0004,vy:-.0003,col:'rgba(57,255,122,'},
+    {x:.15,y:.75,r:.22,vx:.0005,vy:.0002,col:'rgba(255,200,0,'},
+    {x:.85,y:.6,r:.25,vx:-.0003,vy:-.0004,col:'rgba(0,255,224,'},
+  ];
+
+  function resize(){
+    W=canvas.width=window.innerWidth;
+    H=canvas.height=window.innerHeight;
+  }
+  window.addEventListener('resize',resize);
+  resize();
+
+  document.addEventListener('mousemove',e=>{ mouse.x=e.clientX/W; mouse.y=e.clientY/H; });
+  document.addEventListener('mouseleave',()=>{ mouse.x=-999; mouse.y=-999; });
+
+  let t=0;
+  function drawBlob(b,bx,by,br){
+    const g=ctx.createRadialGradient(bx,by,0,bx,by,br);
+    g.addColorStop(0,b.col+'0.07)');
+    g.addColorStop(0.4,b.col+'0.045)');
+    g.addColorStop(1,b.col+'0)');
+    ctx.beginPath();
+    ctx.arc(bx,by,br,0,Math.PI*2);
+    ctx.fillStyle=g;
+    ctx.fill();
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    t+=1;
+    for(const b of BLOBS){
+      // Drift
+      b.x+=b.vx*Math.sin(t*b.vy*80+b.r);
+      b.y+=b.vy*Math.cos(t*b.vx*80+b.r);
+
+      // Cursor repulsion
+      const dx=b.x-mouse.x, dy=b.y-mouse.y;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      const repulseZone=0.25;
+      if(dist<repulseZone&&dist>0.001){
+        const force=(repulseZone-dist)/repulseZone*0.004;
+        b.x+=dx/dist*force;
+        b.y+=dy/dist*force;
+      }
+
+      // Toroidal wrap: keep center within [0,1]
+      if(b.x<0)b.x+=1; if(b.x>1)b.x-=1;
+      if(b.y<0)b.y+=1; if(b.y>1)b.y-=1;
+
+      const br=b.r*Math.min(W,H);
+      // Draw the blob plus wrapped copies on each edge it overhangs,
+      // so it seamlessly flows through to the other side instead of vanishing.
+      for(const ox of [-1,0,1]){
+        for(const oy of [-1,0,1]){
+          const bx=(b.x+ox)*W, by=(b.y+oy)*H;
+          // Only draw copies that could be visible on screen
+          if(bx+br<0||bx-br>W||by+br<0||by-br>H) continue;
+          drawBlob(b,bx,by,br);
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ════════════════════════════════════════════════════
+//  SOUND ENGINE  (Web Audio API, no files needed)
+// ════════════════════════════════════════════════════
+const SFX=(function(){
+  let ctx=null;
+  function ac(){
+    if(!ctx) ctx=new(window.AudioContext||window.webkitAudioContext)();
+    if(ctx.state==='suspended') ctx.resume();
+    return ctx;
+  }
+  function tone(freq,type,vol,attack,decay,t=0){
+    const c=ac(), o=c.createOscillator(), g=c.createGain();
+    o.connect(g); g.connect(c.destination);
+    o.type=type; o.frequency.setValueAtTime(freq,c.currentTime+t);
+    g.gain.setValueAtTime(0,c.currentTime+t);
+    g.gain.linearRampToValueAtTime(vol,c.currentTime+t+attack);
+    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+t+attack+decay);
+    o.start(c.currentTime+t); o.stop(c.currentTime+t+attack+decay+0.05);
+  }
+  function noise(vol,dur,t=0){
+    const c=ac(), buf=c.createBuffer(1,c.sampleRate*dur,c.sampleRate);
+    const d=buf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    const src=c.createBufferSource(), g=c.createGain();
+    src.buffer=buf; src.connect(g); g.connect(c.destination);
+    g.gain.setValueAtTime(vol,c.currentTime+t);
+    g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+t+dur);
+    src.start(c.currentTime+t); src.stop(c.currentTime+t+dur+0.05);
+  }
+  return {
+    keyTick(){ tone(1200,'square',.06,.002,.04); },
+    mistake(){ tone(180,'sawtooth',.18,.005,.25); noise(.05,.15); },
+    wordClick(){ tone(880,'sine',.12,.003,.08); tone(1320,'sine',.06,.003,.06,.04); },
+    sentenceComplete(){
+      [523,659,784,1047].forEach((f,i)=>tone(f,'sine',.18,.01,.3,i*.08));
+    },
+    gpuBoost(){
+      tone(220,'sawtooth',.1,.01,.1);
+      tone(440,'sawtooth',.1,.01,.15,.05);
+      tone(880,'sine',.15,.01,.3,.1);
+    },
+    gpuAbort(){ tone(280,'square',.1,.005,.2); tone(200,'square',.08,.005,.2,.08); },
+    transmit(){ tone(660,'sine',.12,.005,.15); tone(990,'sine',.08,.005,.1,.1); },
+    gameEnd(){ [784,659,523,392].forEach((f,i)=>tone(f,'sine',.2,.01,.4,i*.12)); }
+  };
+})();
+
+// ════════════════════════════════════════════════════
+//  VISUAL HELPERS
+// ════════════════════════════════════════════════════
+function flash(type){ // 'red'|'green'|'gold'
+  const el=document.getElementById('flash-overlay');
+  el.className=''; void el.offsetWidth; el.className=`flash-${type}`;
+}
+function scorePop(text){
+  const el=document.getElementById('score-pop');
+  el.textContent=text; el.className='score-pop';
+  void el.offsetWidth; el.className='score-pop burst';
+}
+function showBanner(text){
+  const el=document.getElementById('complete-banner');
+  el.textContent=text; el.className='';
+  void el.offsetWidth; el.className='show';
+}
+function shakeEl(el){ el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'),400); }
+function multBump(){
+  const el=document.getElementById('hud-mult');
+  el.classList.remove('mult-bump'); void el.offsetWidth; el.classList.add('mult-bump');
+  setTimeout(()=>el.classList.remove('mult-bump'),500);
+}
+
+// ════════════════════════════════════════════════════
+//  VIEWER LINK + VIEWER MODE
+// ════════════════════════════════════════════════════
+function buildViewerURL(roomCode){
+  const u=new URL(window.location.href);
+  u.search=''; // clear params
+  u.searchParams.set('room',roomCode);
+  u.searchParams.set('viewer','true');
+  return u.toString();
+}
+window.copyViewerLink=function(){
+  const inp=document.getElementById('viewer-link-input');
+  inp.select(); document.execCommand('copy');
+  const btn=document.querySelector('.copy-btn');
+  const orig=btn.textContent; btn.textContent='Copied!';
+  setTimeout(()=>btn.textContent=orig,2000);
+};
+
+// Check if we're in viewer mode on page load
+const _urlParams=new URLSearchParams(window.location.search);
+const _isViewer=_urlParams.get('viewer')==='true';
+const _viewerRoom=_urlParams.get('room');
+
+if(_isViewer&&_viewerRoom){
+  // Module scripts are deferred — DOM already ready, call directly
+  initViewerMode(_viewerRoom);
+}
+
+async function initViewerMode(roomCode){
+  // Hide all normal UI, show only the viewer overlay
+  const overlay=document.getElementById('viewer-overlay');
+  overlay.classList.add('active');
+  document.querySelector('h1.logo').style.display='none';
+  document.querySelector('.tagline').style.display='none';
+  document.querySelectorAll('.screen').forEach(s=>s.style.display='none');
+  // Stop blob animation from drawing (cosmetic, not functional)
+  const hud=document.getElementById('hud');
+  if(hud) hud.style.display='none';
+
+  overlay.innerHTML=`
+    <div style="max-width:1200px;margin:0 auto;">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+        <h2 style="font-family:var(--display);font-size:1.2rem;color:var(--accent);letter-spacing:.2em;">BOT VIEWER</h2>
+        <span style="font-family:var(--display);font-size:.65rem;color:var(--dim);letter-spacing:.15em;">ROOM: ${roomCode}</span>
+        <span id="viewer-score" style="margin-left:auto;font-family:var(--display);font-size:1rem;color:var(--gold);"></span>
+      </div>
+      <div class="viewer-grid" id="viewer-grid"></div>
+    </div>`;
+
+  // Listen to players
+  const playersUnsub=onSnapshot(collection(db,'rooms',roomCode,'players'),snap=>{
+    const bots=snap.docs.filter(d=>d.data().isBot).map(d=>({id:d.id,...d.data()}));
+    renderViewerCards(bots,roomCode);
+  });
+
+  // Listen to room score
+  onSnapshot(doc(db,'rooms',roomCode),snap=>{
+    if(!snap.exists()) return;
+    const data=snap.data();
+    const score=data.teamMode?(data.teamScores?.A??0):(data.teamScore??0);
+    const mult=data.gpuMultiplier?.A??1;
+    const el=document.getElementById('viewer-score');
+    if(el) el.textContent=`Score: ${score}  ×${mult.toFixed(1)}`;
+  });
+}
+
+// Track per-bot viewer state
+const viewerBotState={};
+
+function renderViewerCards(bots,roomCode){
+  const grid=document.getElementById('viewer-grid');
+  if(!grid) return;
+  bots.forEach(bot=>{
+    if(!document.getElementById(`vcard-${bot.id}`)){
+      const card=document.createElement('div');
+      card.className='viewer-card'; card.id=`vcard-${bot.id}`;
+      const m=ROLE_META[bot.role]||{label:bot.role,icon:'?'};
+      card.innerHTML=`
+        <div class="viewer-card-title">
+          <span>${m.icon} ${bot.name}</span>
+          <span class="badge ${m.cls||''}">${m.label}</span>
+        </div>
+        <div class="viewer-text" id="vtext-${bot.id}">Waiting for task...</div>
+        <div class="viewer-progress"><div class="viewer-progress-bar" id="vprog-${bot.id}" style="width:0%"></div></div>
+        <div class="viewer-status" id="vstatus-${bot.id}">Idle</div>`;
+      grid.appendChild(card);
+      viewerBotState[bot.id]={role:bot.role,sentenceId:null};
+      // Start listening for this bot's tasks
+      watchBotSentences(bot,roomCode);
+    }
+  });
+}
+
+function watchBotSentences(bot,roomCode){
+  onSnapshot(collection(db,'rooms',roomCode,'sentences'),snap=>{
+    const state=viewerBotState[bot.id];
+    if(!state) return;
+
+    // ── NETWORK bot: show the most recent sentence it authored ──
+    if(bot.role==='network'){
+      const authored=snap.docs
+        .filter(d=>d.data().authorId===bot.id)
+        .sort((a,b)=>{
+          const ta=a.data().createdAt?.toMillis?.()||0;
+          const tb=b.data().createdAt?.toMillis?.()||0;
+          return tb-ta;
+        });
+      const latest=authored[0];
+      const textEl=document.getElementById(`vtext-${bot.id}`);
+      const statEl=document.getElementById(`vstatus-${bot.id}`);
+      const progEl=document.getElementById(`vprog-${bot.id}`);
+      if(latest){
+        if(textEl) textEl.innerHTML=`<span class="viewer-char-done">${latest.data().text}</span>`;
+        if(statEl){
+          const stage=latest.data().stage;
+          const stageLabel=stage==='cpu'?'Sent → CPU processing':stage==='seller'?'Sent → Seller selling':stage==='complete'?'Sent → Completed':'Sent';
+          statEl.textContent=`✓ Transmitted ${authored.length} sentence${authored.length===1?'':'s'} · last: ${stageLabel}`;
+        }
+        if(progEl) progEl.style.width='100%';
+      } else {
+        if(textEl) textEl.textContent='Composing a sentence...';
+        if(statEl) statEl.textContent='Thinking...';
+        if(progEl) progEl.style.width='0%';
+      }
+      return;
+    }
+
+    // ── CPU bot: read real botProgress from the sentence ──
+    if(bot.role==='cpu'){
+      const active=snap.docs.find(d=>d.data().assignedCpu===bot.id&&d.data().stage==='cpu'&&!d.data().cpuDone);
+      if(active){
+        const text=active.data().text;
+        const cuts=active.data().gpuCutsApplied||0;
+        const target=buildCpuTargetViewer(text,cuts);
+        const prog=active.data().botProgress||{typed:0,total:target.length};
+        state.sentenceId=active.id;
+        renderCpuViewer(bot.id,target,prog.typed||0);
+      } else {
+        const textEl=document.getElementById(`vtext-${bot.id}`);
+        if(textEl&&state.sentenceId){ textEl.innerHTML='<span style="color:var(--green);">✓ Done — passed to Seller</span>'; }
+        state.sentenceId=null;
+        const s=document.getElementById(`vstatus-${bot.id}`); if(s) s.textContent='Idle — waiting for next sentence';
+        const p=document.getElementById(`vprog-${bot.id}`); if(p) p.style.width='0%';
+      }
+      return;
+    }
+
+    // ── SELLER bot: read real botProgress ──
+    if(bot.role==='seller'){
+      const active=snap.docs.find(d=>d.data().assignedSeller===bot.id&&d.data().stage==='seller');
+      if(active){
+        const words=active.data().text.trim().split(/\s+/);
+        const prog=active.data().botProgress||{clicked:0,total:words.length};
+        state.sentenceId=active.id;
+        renderSellerViewer(bot.id,words,prog.clicked||0);
+      } else {
+        const textEl=document.getElementById(`vtext-${bot.id}`);
+        if(textEl&&state.sentenceId){ textEl.innerHTML='<span style="color:var(--green);">✓ Sold — sentence complete</span>'; }
+        state.sentenceId=null;
+        const s=document.getElementById(`vstatus-${bot.id}`); if(s) s.textContent='Idle — waiting for a processed sentence';
+        const p=document.getElementById(`vprog-${bot.id}`); if(p) p.style.width='0%';
+      }
+      return;
+    }
+
+    // ── GPU bot: read real botProgress ──
+    if(bot.role==='gpu'){
+      const active=snap.docs.find(d=>d.data().assignedGpu===bot.id&&d.data().stage==='cpu'&&!d.data().gpuTaskDone&&!d.data().cpuDone);
+      if(active){
+        const prog=active.data().botProgress;
+        if(prog&&prog.gpuWords){
+          state.sentenceId=active.id;
+          renderGpuViewer(bot.id,prog.gpuWords,prog.placed||0);
+        } else {
+          // GPU hasn't started placing yet — show the words it will work on
+          const words=active.data().text.trim().split(/\s+/).slice(0,7);
+          renderGpuViewer(bot.id,words,0);
+        }
+      } else {
+        const textEl=document.getElementById(`vtext-${bot.id}`);
+        if(textEl&&state.sentenceId){ textEl.innerHTML='<span style="color:var(--green);">✓ Boost applied</span>'; }
+        state.sentenceId=null;
+        const s=document.getElementById(`vstatus-${bot.id}`); if(s) s.textContent='Idle — waiting for a sentence to accelerate';
+        const p=document.getElementById(`vprog-${bot.id}`); if(p) p.style.width='0%';
+      }
+      return;
+    }
+  });
+}
+
+function buildCpuTargetViewer(text,cuts){
+  if(cuts===0) return text;
+  const words=text.trim().split(/\s+/);
+  return words.slice(0,Math.max(1,words.length-cuts*7)).join(' ');
+}
+
+function renderCpuViewer(botId,target,typed){
+  const el=document.getElementById(`vtext-${botId}`);
+  const prog=document.getElementById(`vprog-${botId}`);
+  const stat=document.getElementById(`vstatus-${botId}`);
+  if(!el) return;
+  let html='';
+  for(let i=0;i<target.length;i++){
+    const ch=target[i]===' '?'&nbsp;':target[i];
+    if(i<typed) html+=`<span class="viewer-char-done">${ch}</span>`;
+    else if(i===typed) html+=`<span class="viewer-char-cursor"></span><span class="viewer-char-todo">${ch}</span>`;
+    else html+=`<span class="viewer-char-todo">${ch}</span>`;
+  }
+  el.innerHTML=html;
+  const pct=target.length>0?Math.round(typed/target.length*100):0;
+  if(prog) prog.style.width=pct+'%';
+  if(stat) stat.textContent=`Typing... ${pct}%`;
+}
+function renderSellerViewer(botId,words,clicked){
+  const el=document.getElementById(`vtext-${botId}`);
+  const prog=document.getElementById(`vprog-${botId}`);
+  const stat=document.getElementById(`vstatus-${botId}`);
+  if(!el) return;
+  el.innerHTML=words.map((w,i)=>`<span class="viewer-word${i<clicked?' clicked':i===clicked?' current':''}">${w}</span>`).join('');
+  const pct=words.length>0?Math.round(clicked/words.length*100):0;
+  if(prog) prog.style.width=pct+'%';
+  if(stat) stat.textContent=`Selling... ${clicked}/${words.length} words`;
+}
+function renderGpuViewer(botId,words,idx){
+  const el=document.getElementById(`vtext-${botId}`);
+  const prog=document.getElementById(`vprog-${botId}`);
+  const stat=document.getElementById(`vstatus-${botId}`);
+  if(!el) return;
+  el.innerHTML=words.map((w,i)=>`<span class="viewer-word${i<idx?' clicked':i===idx?' current':''}">${w}</span>`).join('');
+  const pct=words.length>0?Math.round(idx/words.length*100):0;
+  if(prog) prog.style.width=pct+'%';
+  if(stat) stat.textContent=`Processing... ${idx}/${words.length} words`;
+}
+
+// ════════════════════════════════════════════════════
+//  HOST END GAME BUTTON (host decision mode)
+// ════════════════════════════════════════════════════
+window.hostEndGame=async function(){
+  if(!isHost||!currentRoom) return;
+  if(!confirm('End the game now? This will show final scores.')) return;
+  try{
+    await updateDoc(doc(db,'rooms',currentRoom),{state:'ended'});
+    SFX.gameEnd();
+  }catch(e){ console.error(e); }
+};
+
+// ─── Game End ────────────────────────────────────────
+let gameEndHandled=false;
+async function handleGameEnd(roomData){
+  if(gameEndHandled) return;
+  gameEndHandled=true;
+  if(hudTimerInterval) clearInterval(hudTimerInterval);
+  document.getElementById('host-end-btn').classList.remove('visible');
+  // Stop all bot activity
+  botIntervals.forEach(x=>{ try{ typeof x==='function'?x():clearTimeout(x); }catch(e){} });
+  botIntervals=[];
+
+  SFX.gameEnd(); flash('gold');
+
+  const teamMode=roomData.teamMode;
+  const scoreEl=document.getElementById('gameover-scores');
+  const resultEl=document.getElementById('gameover-result');
+  const trophyEl=document.getElementById('gameover-trophy');
+  const titleEl=document.getElementById('gameover-title');
+
+  if(teamMode){
+    const a=roomData.teamScores?.A??0;
+    const b=roomData.teamScores?.B??0;
+    titleEl.textContent='Final Results';
+    let winner, myWin;
+    if(a>b){ winner='Team Alpha Wins!'; myWin=myTeam==='A'; }
+    else if(b>a){ winner='Team Beta Wins!'; myWin=myTeam==='B'; }
+    else { winner="It's a Tie!"; myWin=null; }
+    resultEl.textContent=winner;
+    resultEl.style.color = a>b?'var(--team-a)':b>a?'var(--team-b)':'var(--gold)';
+    trophyEl.textContent = myWin===true?'🏆':myWin===false?'🥈':'🤝';
+    scoreEl.innerHTML=`
+      <div style="display:flex;justify-content:space-between;padding:12px 16px;background:var(--bg);border:1px solid rgba(0,255,224,.3);border-radius:4px;">
+        <span class="badge team-a">TEAM ALPHA</span>
+        <span style="font-family:var(--display);font-size:1.2rem;color:var(--team-a);">${a}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:12px 16px;background:var(--bg);border:1px solid rgba(255,107,107,.3);border-radius:4px;">
+        <span class="badge team-b">TEAM BETA</span>
+        <span style="font-family:var(--display);font-size:1.2rem;color:var(--team-b);">${b}</span>
+      </div>`;
+  } else {
+    const score=roomData.teamScore??0;
+    titleEl.textContent='Final Score';
+    resultEl.textContent=`${score} POINTS`;
+    resultEl.style.color='var(--gold)';
+    trophyEl.textContent='🏆';
+    // A little flavor tier based on score
+    let tier='Nice work!';
+    if(score>=300) tier='Legendary throughput! 🔥';
+    else if(score>=150) tier='Blazing fast! ⚡';
+    else if(score>=50) tier='Solid processing! 👍';
+    scoreEl.innerHTML=`<div style="font-size:.8rem;color:var(--dim);letter-spacing:.1em;">${tier}</div>`;
+  }
+
+  // Match stats (sentences processed)
+  try{
+    const sentSnap=await getDocs(collection(db,'rooms',currentRoom,'sentences'));
+    const total=sentSnap.docs.length;
+    const completed=sentSnap.docs.filter(d=>d.data().stage==='complete').length;
+    const mult=teamMode?(roomData.gpuMultiplier?.[myTeam]??1):(roomData.gpuMultiplier?.A??1);
+    document.getElementById('gameover-stats').style.display='';
+    document.getElementById('gameover-stats-body').innerHTML=`
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--dim);">Sentences transmitted</span><span style="color:var(--accent);">${total}</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--dim);">Sentences sold</span><span style="color:var(--green);">${completed}</span></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--dim);">Final GPU multiplier</span><span style="color:var(--accent2);">×${mult.toFixed(1)}</span></div>`;
+  }catch(e){}
+
+  // Host can return everyone to lobby
+  if(isHost) document.getElementById('gameover-again-btn').style.display='';
+
+  showBanner('GAME OVER');
+  setTimeout(()=>{
+    document.getElementById('hud').classList.remove('visible');
+    document.body.style.paddingTop='';
+    showScreen('screen-gameover');
+  },700);
+}
+
+// Host resets room back to lobby for another round
+window.returnToLobby=async function(){
+  if(!isHost||!currentRoom) return;
+  try{
+    // Wipe sentences
+    const sentSnap=await getDocs(collection(db,'rooms',currentRoom,'sentences'));
+    await Promise.all(sentSnap.docs.map(d=>deleteDoc(doc(db,'rooms',currentRoom,'sentences',d.id))));
+    // Reset room scores/state
+    await updateDoc(doc(db,'rooms',currentRoom),{
+      state:'lobby',
+      teamScore:0, teamScores:{A:0,B:0},
+      gpuMultiplier:{A:1,B:1},
+      startedAt:null
+    });
+    gameStarted=false; gameEndHandled=false;
+    document.getElementById('hud').classList.remove('visible');
+    document.body.style.paddingTop='';
+    showScreen('screen-lobby');
+  }catch(e){ console.error('returnToLobby',e); }
+};
+
+// ─── Toast ───────────────────────────────────────────
+function showToast(id,msg){
+  const t=document.getElementById(id); if(!t) return;
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FLOATBOX FORGE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   FLOATBOX STUDIO
+   Workstation chrome, syrup-amber accent, waffle-lattice ground.
+   ============================================================ */
+:root{
+  --bg:        #101216;   /* deepest — viewport letterbox */
+  --panel:     #171a20;   /* panel bodies */
+  --raised:    #1e222a;   /* inputs, buttons */
+  --raised-hi: #262b35;   /* hover */
+  --line:      #2c313c;   /* hairlines */
+  --ink:       #e8eaee;
+  --ink-dim:   #8b93a3;
+  --ink-faint: #5b6474;
+  --syrup:     #f0b429;   /* primary accent — the waffle's syrup */
+  --syrup-dk:  #b8860b;
+  --mint:      #39d353;   /* valid / running */
+  --berry:     #e5484d;   /* destructive */
+  --blue:      #4d9dff;   /* default object colour */
+  --r: 5px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:'Archivo',system-ui,sans-serif;
+  font-size:13px; overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select{font-family:inherit;font-size:inherit;color:inherit}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:9px}
+::-webkit-scrollbar-thumb:hover{background:#3c4352}
+
+/* ---------- shell ---------- */
+#app{
+  display:grid; height:100vh;
+  grid-template-columns:212px 1fr 268px;
+  grid-template-rows:48px 1fr 26px;
+  grid-template-areas:
+    "top   top     top"
+    "left  view    right"
+    "status status status";
+}
+
+/* ---------- top bar ---------- */
+#top{
+  grid-area:top; display:flex; align-items:center; gap:14px;
+  padding:0 14px; background:var(--panel);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:9px;user-select:none}
+.waffle-mark{
+  width:24px;height:24px;border-radius:4px;flex:none;
+  background:
+    linear-gradient(var(--syrup),var(--syrup)) padding-box,
+    var(--syrup-dk);
+  background-size:100% 100%;
+  position:relative;overflow:hidden;
+}
+/* four wells pressed into the mark — a waffle in 24px */
+.waffle-mark::before{
+  content:'';position:absolute;inset:3px;
+  background:
+    linear-gradient(90deg,transparent 42%,var(--syrup-dk) 42%,var(--syrup-dk) 58%,transparent 58%),
+    linear-gradient(0deg,transparent 42%,var(--syrup-dk) 42%,var(--syrup-dk) 58%,transparent 58%);
+}
+.brand b{font-weight:800;letter-spacing:.09em;font-size:13px}
+.brand span{color:var(--ink-faint);font-size:10px;letter-spacing:.16em;font-weight:600}
+.topsep{width:1px;height:22px;background:var(--line)}
+.btn{
+  background:var(--raised); border:1px solid var(--line);
+  border-radius:var(--r); padding:6px 11px; cursor:pointer;
+  font-weight:600; letter-spacing:.01em; transition:background .12s,border-color .12s;
+}
+.btn:hover{background:var(--raised-hi)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--syrup);border-color:var(--syrup);color:#20160a;font-weight:800}
+.btn.primary:hover{background:#ffc949}
+.btn:focus-visible,input:focus-visible,select:focus-visible,.obj:focus-visible{
+  outline:2px solid var(--syrup);outline-offset:1px
+}
+#worldName{
+  margin-left:auto; background:transparent; border:1px solid transparent;
+  border-radius:var(--r); padding:5px 9px; width:230px; text-align:right;
+  font-weight:600; color:var(--ink-dim);
+}
+#worldName:hover{border-color:var(--line)}
+#worldName:focus{background:var(--raised);border-color:var(--syrup);color:var(--ink);outline:none;text-align:left}
+
+/* ---------- side panels ---------- */
+.panel{background:var(--panel);display:flex;flex-direction:column;overflow:hidden}
+#left{grid-area:left;border-right:1px solid var(--line)}
+#right{grid-area:right;border-left:1px solid var(--line)}
+.sect-head{
+  padding:11px 13px 7px; font-size:10px; font-weight:800;
+  letter-spacing:.17em; color:var(--ink-faint); text-transform:uppercase;
+  display:flex;align-items:center;gap:7px;
+}
+.sect-head::after{content:'';flex:1;height:1px;background:var(--line)}
+.sect-body{padding:0 10px 12px}
+
+/* ---------- build palette ---------- */
+.palette{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pbtn{
+  background:var(--raised);border:1px solid var(--line);border-radius:var(--r);
+  padding:9px 5px 8px;cursor:pointer;display:flex;flex-direction:column;
+  align-items:center;gap:5px;transition:background .12s,border-color .12s;
+}
+.pbtn:hover{background:var(--raised-hi);border-color:#3d4452}
+.pbtn svg{width:26px;height:22px;opacity:.92}
+.pbtn span{font-size:10.5px;font-weight:600;color:var(--ink-dim);letter-spacing:.02em}
+.pbtn.wide{grid-column:1/-1;flex-direction:row;justify-content:flex-start;padding:8px 10px;gap:9px}
+.pbtn.wide span{font-size:11.5px}
+
+/* ---------- object list ---------- */
+#objList{flex:1;overflow-y:auto;padding:0 8px 10px;min-height:0}
+.obj{
+  display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--r);
+  cursor:pointer;border:1px solid transparent;
+}
+.obj:hover{background:var(--raised)}
+.obj.sel{background:var(--raised-hi);border-color:var(--syrup)}
+.obj .swatch{width:10px;height:10px;border-radius:2px;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.35)}
+.obj .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.obj .ty{font-size:9.5px;color:var(--ink-faint);letter-spacing:.09em;font-weight:700;text-transform:uppercase}
+.empty{padding:16px 12px;color:var(--ink-faint);font-size:11.5px;line-height:1.55}
+
+/* ---------- inspector ---------- */
+#inspect{flex:1;overflow-y:auto;min-height:0}
+.row{display:flex;align-items:center;gap:8px;padding:5px 13px}
+.row .lbl{width:62px;flex:none;color:var(--ink-dim);font-size:11.5px}
+.vec{display:flex;gap:4px;flex:1}
+.num{
+  width:100%;min-width:0;background:var(--raised);border:1px solid var(--line);
+  border-radius:4px;padding:4px 5px;font-family:'JetBrains Mono',monospace;
+  font-size:11px;text-align:right;
+}
+.num:focus{border-color:var(--syrup);outline:none;background:#232833}
+.axis{position:relative;flex:1;min-width:0}
+.axis::before{
+  content:attr(data-axis);position:absolute;left:5px;top:50%;transform:translateY(-50%);
+  font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;
+  color:var(--ink-faint);pointer-events:none;
+}
+.axis .num{padding-left:15px}
+input[type=range]{flex:1;accent-color:var(--syrup);height:16px}
+input[type=color]{
+  width:34px;height:24px;padding:0;border:1px solid var(--line);
+  border-radius:4px;background:var(--raised);cursor:pointer;
+}
+select{
+  flex:1;background:var(--raised);border:1px solid var(--line);
+  border-radius:4px;padding:5px 6px;font-size:11.5px;cursor:pointer;
+}
+.mono{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-dim);min-width:32px;text-align:right}
+.chk{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none}
+.chk input{accent-color:var(--syrup);width:14px;height:14px;cursor:pointer}
+.actions{display:flex;gap:6px;padding:10px 13px 16px}
+.actions .btn{flex:1;text-align:center;font-size:12px}
+.btn.danger:hover{background:#3a1f21;border-color:var(--berry);color:#ff8b8f}
+
+/* ---------- viewport ---------- */
+#view{grid-area:view;position:relative;background:var(--bg);overflow:hidden}
+#view canvas{display:block}
+#viewHint{
+  position:absolute;left:12px;top:11px;pointer-events:none;
+  font-size:10.5px;line-height:1.75;color:var(--ink-faint);
+  font-family:'JetBrains Mono',monospace;
+}
+#viewHint kbd{
+  background:var(--raised);border:1px solid var(--line);border-radius:3px;
+  padding:0 4px;color:var(--ink-dim);font-family:inherit;font-size:10px;
+}
+#modeBar{
+  position:absolute;left:50%;transform:translateX(-50%);bottom:12px;
+  display:flex;gap:3px;background:rgba(23,26,32,.93);border:1px solid var(--line);
+  border-radius:7px;padding:3px;backdrop-filter:blur(8px);
+}
+#modeBar button{
+  background:transparent;border:0;border-radius:5px;padding:5px 13px;cursor:pointer;
+  font-size:11px;font-weight:600;color:var(--ink-dim);letter-spacing:.04em;
+}
+#modeBar button:hover{background:var(--raised)}
+#modeBar button.on{background:var(--syrup);color:#20160a;font-weight:800}
+#snapBox{
+  position:absolute;right:12px;top:11px;display:flex;align-items:center;gap:7px;
+  background:rgba(23,26,32,.93);border:1px solid var(--line);border-radius:7px;
+  padding:6px 10px;backdrop-filter:blur(8px);font-size:11px;
+}
+#snapBox select{padding:2px 4px;font-size:10.5px;flex:none;width:62px}
+
+/* ---------- status ---------- */
+#status{
+  grid-area:status;display:flex;align-items:center;gap:16px;padding:0 13px;
+  background:var(--panel);border-top:1px solid var(--line);
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-faint);
+}
+#status .hot{color:var(--syrup)}
+#status .ok{color:var(--mint)}
+#statusMsg{margin-left:auto;color:var(--ink-dim)}
+
+/* ---------- toast ---------- */
+#toast{
+  position:fixed;left:50%;bottom:52px;transform:translate(-50%,14px);
+  background:var(--raised-hi);border:1px solid var(--line);border-left:3px solid var(--syrup);
+  border-radius:var(--r);padding:9px 15px;font-size:12px;font-weight:600;
+  opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:50;
+}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.bad{border-left-color:var(--berry)}
+
+@media (prefers-reduced-motion: reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <header id="top">
+    <div class="brand">
+      <div class="waffle-mark" aria-hidden="true"></div>
+      <div>
+        <b>FLOATBOX FORGE</b><br>
+        <span>WORLD EDITOR</span>
+      </div>
+    </div>
+    <div class="topsep"></div>
+    <button class="btn" id="btnNew">New</button>
+    <button class="btn" id="btnOpen">Open</button>
+    <button class="btn primary" id="btnSave">Save .waffle</button>
+    <input id="worldName" value="Untitled World" spellcheck="false" aria-label="World name">
+    <input type="file" id="fileInput" accept=".waffle" hidden>
+  </header>
+
+  <aside class="panel" id="left">
+    <div class="sect-head">Build</div>
+    <div class="sect-body">
+      <div class="palette" id="palette"></div>
+    </div>
+    <div class="sect-head">Objects <span id="objCount" style="color:var(--ink-faint);font-weight:600;letter-spacing:0"></span></div>
+    <div id="objList"></div>
+  </aside>
+
+  <main id="view">
+    <div id="viewHint">
+      <kbd>WASD</kbd> fly &nbsp; <kbd>Q</kbd>/<kbd>E</kbd> down/up &nbsp; <kbd>Shift</kbd> faster<br>
+      <kbd>LMB</kbd> select &nbsp; <kbd>RMB</kbd> orbit &nbsp; <kbd>MMB</kbd> pan<br>
+      <kbd>G</kbd> move &nbsp; <kbd>R</kbd> rotate &nbsp; <kbd>T</kbd> scale &nbsp; <kbd>F</kbd> focus<br>
+      <kbd>Ctrl+C</kbd>/<kbd>V</kbd>/<kbd>X</kbd> copy paste cut &nbsp; <kbd>Del</kbd> delete
+    </div>
+    <div id="snapBox">
+      <label class="chk"><input type="checkbox" id="snapOn" checked> Snap</label>
+      <select id="snapStep">
+        <option value="0.25">0.25 m</option>
+        <option value="0.5" selected>0.5 m</option>
+        <option value="1">1 m</option>
+        <option value="2">2 m</option>
+      </select>
+    </div>
+    <div id="modeBar">
+      <button data-mode="translate" class="on">Move</button>
+      <button data-mode="rotate">Rotate</button>
+      <button data-mode="scale">Scale</button>
+    </div>
+  </main>
+
+  <aside class="panel" id="right">
+    <div class="sect-head">Inspector</div>
+    <div id="inspect"></div>
+  </aside>
+
+  <div id="status">
+    <span>objects <span class="hot" id="stCount">0</span></span>
+    <span>grid <span class="hot" id="stGrid">0.5</span></span>
+    <span>mode <span class="hot" id="stMode">move</span></span>
+    <span id="stSpawn">spawn <span class="ok">set</span></span>
+    <span>floor <span class="hot" id="stFloor">200m @ y0.0</span></span>
+    <span id="statusMsg">Ready</span>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
+
+const $ = id => document.getElementById(id);
+
+/* =========================================================================
+   1. THE FORMAT
+   .waffle — World As a Frickin' Floatbox Level Export
+   Bytes: 'WAFL' magic, one version byte, one codec byte, then the payload.
+   codec 1 = gzip, codec 0 = plain UTF-8 JSON (fallback where
+   CompressionStream is unavailable). The magic lets the game reject
+   a mis-dragged file with a real message instead of a JSON parse error.
+   ========================================================================= */
+const WAFFLE_MAGIC = [0x57, 0x41, 0x46, 0x4C];   // 'WAFL'
+const WAFFLE_VERSION = 1;
+
+async function encodeWaffle(obj){
+  const json = JSON.stringify(obj);
+  const raw = new TextEncoder().encode(json);
+  let payload = raw, codec = 0;
+  if(typeof CompressionStream !== 'undefined'){
+    try{
+      const cs = new CompressionStream('gzip');
+      const stream = new Blob([raw]).stream().pipeThrough(cs);
+      payload = new Uint8Array(await new Response(stream).arrayBuffer());
+      codec = 1;
+    }catch(e){ payload = raw; codec = 0; }
+  }
+  const out = new Uint8Array(6 + payload.length);
+  out.set(WAFFLE_MAGIC, 0);
+  out[4] = WAFFLE_VERSION;
+  out[5] = codec;
+  out.set(payload, 6);
+  return { bytes: out, rawSize: raw.length, codec };
+}
+
+async function decodeWaffle(buffer){
+  const b = new Uint8Array(buffer);
+  if(b.length < 7) throw new Error('File is too small to be a .waffle');
+  for(let i=0;i<4;i++){
+    if(b[i] !== WAFFLE_MAGIC[i]) throw new Error('Not a .waffle file (bad header)');
+  }
+  const version = b[4], codec = b[5];
+  if(version > WAFFLE_VERSION) throw new Error(`This .waffle is version ${version}; the editor reads up to ${WAFFLE_VERSION}`);
+  const payload = b.slice(6);
+  let json;
+  if(codec === 1){
+    const ds = new DecompressionStream('gzip');
+    const stream = new Blob([payload]).stream().pipeThrough(ds);
+    json = await new Response(stream).text();
+  }else{
+    json = new TextDecoder().decode(payload);
+  }
+  return JSON.parse(json);
+}
+
+/* =========================================================================
+   2. OBJECT CATALOG
+   ========================================================================= */
+
+// Items the game knows how to spawn — keep in step with floatbox's ITEMS.
+const FLOATBOX_ITEMS = [
+  ['crate','Crate'], ['platform','Wood Platform'], ['ladder','Ladder'],
+  ['cubeSmall','Small Cube'], ['cubeMedium','Medium Cube'], ['cubeBig','Big Cube'], ['cubeXL','XL Cube'],
+  ['duck','Rubber Duck'], ['beachball','Beach Ball'], ['cheeseburger','Cheeseburger'],
+  ['spring','Spring'], ['mover','Moving Platform'], ['iphone','Smartphone'],
+  ['car','Car'], ['glock','Glock 17'], ['ak47','AK-47'],
+  ['sword','Sword'], ['bomb','Bomb'], ['mortar','Mortar Launcher'],
+  ['nuke','Nuke'], ['bunker','Nuke Bunker'], ['turret','Turret']
+];
+
+const ICONS = {
+  cube:`<svg viewBox="0 0 24 24" fill="none" stroke="#f0b429" stroke-width="1.5" stroke-linejoin="round"><path d="M12 2.6 21 7v10l-9 4.4L3 17V7z"/><path d="M3 7l9 4.4L21 7M12 11.4V21.4"/></svg>`,
+  platform:`<svg viewBox="0 0 24 24" fill="none" stroke="#f0b429" stroke-width="1.5" stroke-linejoin="round"><path d="M12 5 22 9.5 12 14 2 9.5z"/><path d="M2 9.5v3L12 17l10-4.5v-3"/></svg>`,
+  ramp:`<svg viewBox="0 0 24 24" fill="none" stroke="#f0b429" stroke-width="1.5" stroke-linejoin="round"><path d="M3 19h18L3 7z"/><path d="M3 7v12"/></svg>`,
+  hexagon:`<svg viewBox="0 0 24 24" fill="none" stroke="#f0b429" stroke-width="1.5" stroke-linejoin="round"><path d="M12 4.2 19 8v8l-7 3.8L5 16V8z"/></svg>`,
+  octagon:`<svg viewBox="0 0 24 24" fill="none" stroke="#f0b429" stroke-width="1.5" stroke-linejoin="round"><path d="M8.5 3.5h7L20.5 8.5v7L15.5 20.5h-7L3.5 15.5v-7z"/></svg>`,
+  itemSpawner:`<svg viewBox="0 0 24 24" fill="none" stroke="#39d353" stroke-width="1.5" stroke-linejoin="round"><rect x="4" y="13" width="16" height="7" rx="1.5"/><circle cx="12" cy="8" r="3"/><path d="M12 11v2"/></svg>`,
+  playerSpawn:`<svg viewBox="0 0 24 24" fill="none" stroke="#4d9dff" stroke-width="1.5" stroke-linejoin="round"><circle cx="12" cy="7" r="3.2"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>`
+};
+
+const TYPES = {
+  cube: {
+    label:'Cube', solid:true,
+    defaults:{ scale:[2,2,2], color:'#4d9dff' },
+    geo: ()=> new THREE.BoxGeometry(1,1,1)
+  },
+  platform: {
+    label:'Platform', solid:true, isPlatform:true,
+    defaults:{ scale:[6,1,6], color:'#8a6a45', thickness:1 },
+    // y scale is driven by `thickness` (1 or 2 slabs of 0.25 m)
+    geo: ()=> new THREE.BoxGeometry(1,1,1)
+  },
+  ramp: {
+    label:'Ramp', solid:true,
+    defaults:{ scale:[4,2,5], color:'#6e7b8a' },
+    geo: ()=> makeWedge()
+  },
+  hexagon: {
+    label:'Hex Pad', solid:true, isPad:true,
+    defaults:{ scale:[3,0.5,3], color:'#c9852f' },
+    geo: ()=> new THREE.CylinderGeometry(0.5,0.5,1,6,1)
+  },
+  octagon: {
+    label:'Oct Pad', solid:true, isPad:true,
+    defaults:{ scale:[3,0.5,3], color:'#b8623a' },
+    geo: ()=> new THREE.CylinderGeometry(0.5,0.5,1,8,1)
+  },
+  itemSpawner: {
+    label:'Item Spawner', solid:false, unique:false,
+    defaults:{ scale:[1,1,1], color:'#39d353', item:'crate', label:'Spawn', cooldown:1.5 },
+    geo: null
+  },
+  playerSpawn: {
+    label:'Player Spawn', solid:false, unique:true,
+    defaults:{ scale:[1,1,1], color:'#4d9dff' },
+    geo: null
+  }
+};
+
+/* A right-triangular prism: the slope climbs along +Z and rises to +Y.
+   Written out by hand because ExtrudeGeometry's UVs and winding get fiddly
+   for something this simple. */
+function makeWedge(){
+  const g = new THREE.BufferGeometry();
+  // unit wedge, centred on x, spanning y and z in [-0.5, 0.5]
+  // Every triangle is wound counter-clockwise seen from OUTSIDE. Getting this
+  // backwards renders the ramp inside-out: you see the far faces and the near
+  // ones vanish. Verified watertight, with outward-facing normals.
+  const v = [
+    // right face (x = +0.5): triangle cap
+     0.5,-0.5,-0.5,   0.5, 0.5, 0.5,   0.5,-0.5, 0.5,
+    // left face (x = -0.5): triangle cap
+    -0.5,-0.5,-0.5,  -0.5,-0.5, 0.5,  -0.5, 0.5, 0.5,
+    // bottom
+    -0.5,-0.5,-0.5,   0.5,-0.5, 0.5,  -0.5,-0.5, 0.5,
+    -0.5,-0.5,-0.5,   0.5,-0.5,-0.5,   0.5,-0.5, 0.5,
+    // back wall (z = +0.5), the tall end
+    -0.5,-0.5, 0.5,   0.5, 0.5, 0.5,  -0.5, 0.5, 0.5,
+    -0.5,-0.5, 0.5,   0.5,-0.5, 0.5,   0.5, 0.5, 0.5,
+    // the slope itself
+    -0.5,-0.5,-0.5,  -0.5, 0.5, 0.5,   0.5, 0.5, 0.5,
+    -0.5,-0.5,-0.5,   0.5, 0.5, 0.5,   0.5,-0.5,-0.5
+  ];
+  g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+  g.computeVertexNormals();
+  g.computeBoundingBox();
+  return g;
+}
+
+/* =========================================================================
+   3. SCENE
+   No shadow maps and no physics — this is a viewer, so it stays cheap.
+   ========================================================================= */
+const viewEl = $('view');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0e1014);
+scene.fog = new THREE.Fog(0x0e1014, 90, 260);
+
+const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 2000);
+camera.position.set(16, 13, 20);
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = false;          // explicit: studio renders flat
+viewEl.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x30302a, 2.1));
+const sun = new THREE.DirectionalLight(0xfff3dd, 1.5);
+sun.position.set(24, 38, 18);
+scene.add(sun);
+const rim = new THREE.DirectionalLight(0x88aaff, 0.4);
+rim.position.set(-20, 12, -16);
+scene.add(rim);
+
+/* ---- the floor ----
+   This is now a real, editable object rather than a decoration: it's the
+   actual floor players stand on in Floatbox, matching the game's own ground
+   body (a flat square, top face at floor.pos.y). Locked to a square so X and
+   Z always agree — the game's collision box assumes that. Position is
+   restricted to y = -20..0, since the floor can sit low but never float
+   above the world.
+   ------------------------------------------------------------------------ */
+const FLOOR_MIN_Y = -20, FLOOR_MAX_Y = 0;
+const FLOOR_MIN_SIZE = 20, FLOOR_MAX_SIZE = 400;
+
+const floor = {
+  size: 200,
+  y: 0,
+  style: 'waffle',        // 'waffle' | 'solid'
+  color: '#c98f3a',
+  metalness: 0.02,
+  roughness: 0.94,
+  grad: { on:false, color2:'#7a4f18', axis:'x' }
+};
+
+function waffleTexture(size){
+  const S = 256, c = document.createElement('canvas');
+  c.width = c.height = S;
+  const g = c.getContext('2d');
+  g.fillStyle = floor.color; g.fillRect(0,0,S,S);          // batter
+  const cells = 4, pad = 7, cell = S / cells;
+  const shade = shadeHex(floor.color, -0.42);
+  const shadeLo = shadeHex(floor.color, -0.22);
+  for(let y=0;y<cells;y++){
+    for(let x=0;x<cells;x++){
+      const px = x*cell + pad, py = y*cell + pad, sz = cell - pad*2;
+      const grad = g.createLinearGradient(px, py, px, py+sz);
+      grad.addColorStop(0, shade);                          // the well, in shade
+      grad.addColorStop(1, shadeLo);
+      g.fillStyle = grad;
+      g.fillRect(px, py, sz, sz);
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(size/8, size/8);
+  t.anisotropy = 4;
+  return t;
+}
+
+function shadeHex(hex, amt){
+  const c = new THREE.Color(hex);
+  const hsl = {};
+  c.getHSL(hsl);
+  hsl.l = Math.max(0, Math.min(1, hsl.l + amt));
+  c.setHSL(hsl.h, hsl.s, hsl.l);
+  return '#' + c.getHexString();
+}
+
+let floorMesh = null, floorGrid = null;
+
+function rebuildFloor(){
+  if(floorMesh){
+    scene.remove(floorMesh);
+    floorMesh.geometry.dispose();
+    floorMesh.material.dispose();
+  }
+  if(floorGrid) scene.remove(floorGrid);
+
+  const geo = new THREE.PlaneGeometry(floor.size, floor.size, 1, 1);
+  const mat = new THREE.MeshStandardMaterial({
+    roughness: floor.roughness, metalness: floor.metalness
+  });
+  if(floor.style === 'waffle'){
+    mat.map = waffleTexture(floor.size);
+  }else{
+    mat.color.set(floor.color);
+  }
+  if(floor.grad.on){
+    // vertex-colour bake, same technique as every other object, laid across
+    // the plane's local X/Y (its rotation puts local Y along world Z)
+    const pos = geo.attributes.position;
+    geo.computeBoundingBox();
+    const bb = geo.boundingBox;
+    const ax = floor.grad.axis === 'z' ? 1 : 0;   // plane-local: x->world x, y->world z
+    const lo = ax === 0 ? bb.min.x : bb.min.y;
+    const hi = ax === 0 ? bb.max.x : bb.max.y;
+    const span = (hi - lo) || 1;
+    const cA = new THREE.Color(floor.color), cB = new THREE.Color(floor.grad.color2);
+    const colors = new Float32Array(pos.count * 3);
+    const tmp = new THREE.Color();
+    for(let i=0;i<pos.count;i++){
+      const t = (pos.getComponent(i, ax) - lo) / span;
+      tmp.copy(cA).lerp(cB, t);
+      colors[i*3]=tmp.r; colors[i*3+1]=tmp.g; colors[i*3+2]=tmp.b;
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    mat.vertexColors = true;
+    if(floor.style !== 'waffle') mat.color.set(0xffffff);
+  }
+
+  floorMesh = new THREE.Mesh(geo, mat);
+  floorMesh.rotation.x = -Math.PI/2;
+  floorMesh.position.y = floor.y;
+  floorMesh.name = '__floor';
+  scene.add(floorMesh);
+
+  floorGrid = new THREE.GridHelper(floor.size, Math.max(4, Math.round(floor.size/4)), 0xf0b429, 0x3a4150);
+  floorGrid.material.transparent = true;
+  floorGrid.material.opacity = 0.16;
+  floorGrid.position.y = floor.y + 0.012;
+  scene.add(floorGrid);
+
+  const stat = $('stFloor'); if(stat) stat.textContent = `${floor.size}m @ y${floor.y.toFixed(1)}`;
+}
+rebuildFloor();
+
+// axis needles at the origin, so "which way is +Z" is never a guess
+const axes = new THREE.Group();
+for(const [dir, col] of [[[1,0,0],0xe5484d],[[0,1,0],0x39d353],[[0,0,1],0x4d9dff]]){
+  const geo = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0,0.02,0), new THREE.Vector3(dir[0]*3.2, 0.02+dir[1]*3.2, dir[2]*3.2)
+  ]);
+  axes.add(new THREE.Line(geo, new THREE.LineBasicMaterial({color:col, transparent:true, opacity:0.75})));
+}
+scene.add(axes);
+
+/* ---- controls ---- */
+const orbit = new OrbitControls(camera, renderer.domElement);
+orbit.enableDamping = true;
+orbit.dampingFactor = 0.09;
+orbit.maxPolarAngle = Math.PI * 0.495;      // never drop under the floor
+orbit.target.set(0, 1.5, 0);
+orbit.mouseButtons = {
+  LEFT: null,
+  MIDDLE: THREE.MOUSE.PAN,
+  RIGHT: THREE.MOUSE.ROTATE
+};
+
+const gizmo = new TransformControls(camera, renderer.domElement);
+gizmo.setSize(0.85);
+gizmo.addEventListener('dragging-changed', e => { orbit.enabled = !e.value; });
+gizmo.addEventListener('objectChange', onGizmoMove);
+scene.add(gizmo);
+
+/* selection outline */
+const selBox = new THREE.BoxHelper(undefined, 0xf0b429);
+selBox.material.depthTest = false;
+selBox.material.transparent = true;
+selBox.material.opacity = 0.95;
+selBox.visible = false;
+scene.add(selBox);
+
+/* =========================================================================
+   4. WORLD STATE
+   Flat list, by design — no hierarchy to reason about.
+   ========================================================================= */
+let objects = [];
+let selected = null;
+let nextId = 1;
+let snapOn = true, snapStep = 0.5;
+
+const meshToObj = new WeakMap();
+
+function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
+
+function defaultsFor(type){
+  const d = TYPES[type].defaults;
+  return {
+    color: d.color, metalness: 0.05, roughness: 0.85,
+    grad: { on:false, color2:'#ffffff', axis:'y' },
+    thickness: d.thickness,
+    item: d.item, spawnLabel: d.label, cooldown: d.cooldown
+  };
+}
+
+function addObject(type, pos, opts = {}){
+  if(TYPES[type].unique){
+    const existing = objects.find(o => o.type === type);
+    if(existing){
+      select(existing);
+      toast(`There's only one ${TYPES[type].label} — moved you to it`, false);
+      focusSelected();
+      return existing;
+    }
+  }
+  const d = TYPES[type].defaults;
+  const o = Object.assign({
+    id: nextId++,
+    type,
+    name: opts.name || `${TYPES[type].label} ${objects.filter(x=>x.type===type).length + 1}`,
+    pos: pos ? pos.slice() : [0, d.scale[1]/2, 0],
+    rot: [0,0,0],
+    scale: d.scale.slice()
+  }, defaultsFor(type), opts);
+
+  o.mesh = buildMesh(o);
+  scene.add(o.mesh);
+  meshToObj.set(o.mesh, o);
+  o.mesh.traverse(m => meshToObj.set(m, o));
+  objects.push(o);
+  applyTransform(o);
+  refreshList();
+  return o;
+}
+
+function buildMesh(o){
+  const T = TYPES[o.type];
+  if(o.type === 'playerSpawn') return buildSpawnMarker();
+  if(o.type === 'itemSpawner') return buildItemSpawner(o);
+  const mesh = new THREE.Mesh(T.geo(), makeMaterial(o));
+  mesh.name = o.name;
+  return mesh;
+}
+
+/* ---- markers ---- */
+function buildSpawnMarker(){
+  const g = new THREE.Group();
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(0.62, 0.055, 8, 32),
+    new THREE.MeshStandardMaterial({color:0x4d9dff, emissive:0x1b4d8f, emissiveIntensity:0.7, roughness:0.4})
+  );
+  ring.rotation.x = -Math.PI/2;
+  ring.position.y = 0.06;
+  g.add(ring);
+  const post = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.055, 0.055, 1.7, 8),
+    new THREE.MeshStandardMaterial({color:0x4d9dff, roughness:0.5})
+  );
+  post.position.y = 0.9;
+  g.add(post);
+  // a chevron pointing where the player will face (+Z, matching the game)
+  const arrow = new THREE.Mesh(
+    new THREE.ConeGeometry(0.24, 0.5, 4),
+    new THREE.MeshStandardMaterial({color:0x9ecbff, roughness:0.4})
+  );
+  arrow.rotation.x = Math.PI/2;
+  arrow.rotation.y = Math.PI/4;
+  arrow.position.set(0, 0.32, 0.85);
+  g.add(arrow);
+  return g;
+}
+
+function buildItemSpawner(o){
+  const g = new THREE.Group();
+  const base = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.52, 0.62, 0.9, 10),
+    new THREE.MeshStandardMaterial({color:0x2f3742, roughness:0.8, metalness:0.3})
+  );
+  base.position.y = 0.45;
+  g.add(base);
+  const btn = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.26, 0.26, 0.14, 14),
+    new THREE.MeshStandardMaterial({color:o.color || '#39d353', emissive:0x1c6b2c, emissiveIntensity:0.85, roughness:0.4})
+  );
+  btn.position.y = 0.96;
+  btn.name = 'button';
+  g.add(btn);
+  const halo = new THREE.Mesh(
+    new THREE.TorusGeometry(0.42, 0.03, 6, 24),
+    new THREE.MeshStandardMaterial({color:0x39d353, emissive:0x39d353, emissiveIntensity:0.5, roughness:0.5})
+  );
+  halo.rotation.x = -Math.PI/2;
+  halo.position.y = 1.28;
+  halo.name = 'halo';
+  g.add(halo);
+  return g;
+}
+
+/* ---- materials, including the gradient bake ---- */
+function makeMaterial(o){
+  const m = new THREE.MeshStandardMaterial({
+    color: new THREE.Color(o.color),
+    metalness: o.metalness,
+    roughness: o.roughness,
+    flatShading: o.type === 'ramp'
+  });
+  return m;
+}
+
+/* Gradients are baked into vertex colours rather than a texture. A texture
+   gradient smears across a box's top and bottom faces because those UVs run
+   the other way; per-vertex colour follows the geometry itself, so it reads
+   correctly on every face and on the pads' curved sides too. */
+function applyGradient(o){
+  const mesh = o.mesh;
+  if(!mesh.isMesh) return;
+  const geo = mesh.geometry;
+
+  if(!o.grad.on){
+    geo.deleteAttribute('color');
+    mesh.material.vertexColors = false;
+    mesh.material.color.set(o.color);
+    mesh.material.needsUpdate = true;
+    return;
+  }
+
+  const pos = geo.attributes.position;
+  geo.computeBoundingBox();
+  const bb = geo.boundingBox;
+  const axis = o.grad.axis;
+  const lo = bb.min[axis], hi = bb.max[axis];
+  const span = (hi - lo) || 1;
+
+  const cA = new THREE.Color(o.color);
+  const cB = new THREE.Color(o.grad.color2);
+  const colors = new Float32Array(pos.count * 3);
+  const tmp = new THREE.Color();
+  for(let i = 0; i < pos.count; i++){
+    const t = (pos.getComponent(i, axis === 'x' ? 0 : axis === 'y' ? 1 : 2) - lo) / span;
+    tmp.copy(cA).lerp(cB, t);
+    colors[i*3] = tmp.r; colors[i*3+1] = tmp.g; colors[i*3+2] = tmp.b;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  mesh.material.vertexColors = true;
+  mesh.material.color.set(0xffffff);   // let the vertex colours through unchanged
+  mesh.material.needsUpdate = true;
+}
+
+function refreshMaterial(o){
+  if(o.type === 'itemSpawner'){
+    const btn = o.mesh.getObjectByName('button');
+    if(btn) btn.material.color.set(o.color);
+    return;
+  }
+  if(o.type === 'playerSpawn') return;
+  o.mesh.material.metalness = o.metalness;
+  o.mesh.material.roughness = o.roughness;
+  applyGradient(o);
+}
+
+function applyTransform(o){
+  o.mesh.position.set(o.pos[0], o.pos[1], o.pos[2]);
+  o.mesh.rotation.set(o.rot[0], o.rot[1], o.rot[2]);
+  if(TYPES[o.type].solid){
+    const sy = TYPES[o.type].isPlatform ? (o.thickness || 1) * 0.25 : o.scale[1];
+    o.mesh.scale.set(o.scale[0], sy, o.scale[2]);
+  }
+  if(selected === o) selBox.setFromObject(o.mesh);
+}
+
+function removeObject(o){
+  scene.remove(o.mesh);
+  o.mesh.traverse(m => {
+    if(m.geometry) m.geometry.dispose();
+    if(m.material) m.material.dispose();
+  });
+  objects = objects.filter(x => x !== o);
+  if(selected === o) select(null);
+  refreshList();
+}
+
+function duplicateObject(o){
+  if(TYPES[o.type].unique){ toast(`Only one ${TYPES[o.type].label} per world`, true); return; }
+  const copy = addObject(o.type, [o.pos[0] + 2, o.pos[1], o.pos[2] + 2], {
+    name: o.name + ' copy',
+    color: o.color, metalness: o.metalness, roughness: o.roughness,
+    grad: JSON.parse(JSON.stringify(o.grad)),
+    thickness: o.thickness, item: o.item, spawnLabel: o.spawnLabel, cooldown: o.cooldown
+  });
+  copy.rot = o.rot.slice();
+  copy.scale = o.scale.slice();
+  applyTransform(copy);
+  refreshMaterial(copy);
+  select(copy);
+  refreshList();
+}
+
+/* =========================================================================
+   5. SELECTION
+   ========================================================================= */
+const FLOOR_SEL = { id:'__floor', type:'__floor' };
+
+function select(o){
+  selected = o;
+  if(o && o !== FLOOR_SEL){
+    gizmo.attach(o.mesh);
+    selBox.setFromObject(o.mesh);
+    selBox.visible = true;
+  }else{
+    // the floor edits through the inspector only — free-dragging a 200m
+    // plane with the gizmo is more likely to lose it than help
+    gizmo.detach();
+    selBox.visible = false;
+  }
+  refreshList();
+  buildInspector();
+}
+
+function focusSelected(){
+  if(!selected) return;
+  if(selected === FLOOR_SEL){
+    orbit.target.set(0, floor.y, 0);
+    camera.position.set(floor.size*0.28, floor.y + floor.size*0.22, floor.size*0.28);
+    return;
+  }
+  const box = new THREE.Box3().setFromObject(selected.mesh);
+  const centre = box.getCenter(new THREE.Vector3());
+  const radius = Math.max(2.2, box.getSize(new THREE.Vector3()).length() * 0.62);
+  const dir = new THREE.Vector3().subVectors(camera.position, orbit.target).normalize();
+  orbit.target.copy(centre);
+  camera.position.copy(centre).addScaledVector(dir, radius * 2.3);
+}
+
+const ray = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+let downAt = null;
+
+renderer.domElement.addEventListener('pointerdown', e => {
+  if(e.button === 0) downAt = { x: e.clientX, y: e.clientY };
+});
+
+renderer.domElement.addEventListener('pointerup', e => {
+  if(e.button !== 0 || !downAt) return;
+  const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y);
+  downAt = null;
+  if(moved > 4) return;              // a drag, not a click
+  if(gizmo.dragging) return;
+
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+  ndc.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+  ray.setFromCamera(ndc, camera);
+
+  const hits = ray.intersectObjects([...objects.map(o => o.mesh), floorMesh], true);
+  if(hits.length){
+    const o = meshToObj.get(hits[0].object);
+    if(o) select(o);
+    else if(hits[0].object === floorMesh) select(FLOOR_SEL);
+  }else{
+    select(null);
+  }
+});
+
+/* Snapping is applied on the way out of the gizmo so the numbers stay round
+   in the file, not just on screen. */
+function onGizmoMove(){
+  if(!selected || selected === FLOOR_SEL) return;
+  const m = selected.mesh;
+  if(snapOn && gizmo.getMode() === 'translate'){
+    m.position.x = Math.round(m.position.x / snapStep) * snapStep;
+    m.position.y = Math.round(m.position.y / snapStep) * snapStep;
+    m.position.z = Math.round(m.position.z / snapStep) * snapStep;
+  }
+  if(snapOn && gizmo.getMode() === 'rotate'){
+    const step = Math.PI / 12;   // 15°
+    m.rotation.x = Math.round(m.rotation.x / step) * step;
+    m.rotation.y = Math.round(m.rotation.y / step) * step;
+    m.rotation.z = Math.round(m.rotation.z / step) * step;
+  }
+  selected.pos = [m.position.x, m.position.y, m.position.z];
+  selected.rot = [m.rotation.x, m.rotation.y, m.rotation.z];
+  if(TYPES[selected.type].solid && gizmo.getMode() === 'scale'){
+    let sx = m.scale.x, sy = m.scale.y, sz = m.scale.z;
+    if(snapOn){
+      sx = Math.max(snapStep, Math.round(sx / snapStep) * snapStep);
+      sy = Math.max(snapStep, Math.round(sy / snapStep) * snapStep);
+      sz = Math.max(snapStep, Math.round(sz / snapStep) * snapStep);
+    }
+    selected.scale = [Math.max(0.05, sx), Math.max(0.05, sy), Math.max(0.05, sz)];
+    if(TYPES[selected.type].isPlatform){
+      // platforms carry their height as a slab count, so read it back that way
+      selected.thickness = sy > 0.375 ? 2 : 1;
+    }
+  }
+  applyTransform(selected);
+  selBox.setFromObject(m);
+  syncInspectorValues();
+}
+
+/* =========================================================================
+   6. PANELS
+   ========================================================================= */
+function buildPalette(){
+  const wrap = $('palette');
+  wrap.innerHTML = '';
+  for(const [type, T] of Object.entries(TYPES)){
+    const b = document.createElement('button');
+    b.className = 'pbtn' + (T.solid ? '' : ' wide');
+    b.innerHTML = `${ICONS[type]}<span>${T.label}</span>`;
+    b.title = `Add ${T.label}`;
+    b.onclick = () => {
+      const o = addObject(type, spawnPointInFront(type));
+      if(o) select(o);
+    };
+    wrap.appendChild(b);
+  }
+}
+
+/* Drop new objects just in front of the camera, resting on the ground. */
+function spawnPointInFront(type){
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+  dir.y = 0;
+  if(dir.lengthSq() < 0.001) dir.set(0,0,-1);
+  dir.normalize();
+  const p = orbit.target.clone().addScaledVector(dir, 3.5);
+  const d = TYPES[type].defaults;
+  const h = TYPES[type].isPlatform ? (d.thickness||1)*0.25 : (TYPES[type].solid ? d.scale[1] : 0);
+  p.y = h / 2;
+  if(snapOn){
+    p.x = Math.round(p.x / snapStep) * snapStep;
+    p.z = Math.round(p.z / snapStep) * snapStep;
+  }
+  return [p.x, p.y, p.z];
+}
+
+function refreshList(){
+  const list = $('objList');
+  $('objCount').textContent = objects.length ? `(${objects.length})` : '';
+  $('stCount').textContent = objects.length;
+  const hasSpawn = objects.some(o => o.type === 'playerSpawn');
+  $('stSpawn').innerHTML = hasSpawn
+    ? 'spawn <span class="ok">set</span>'
+    : 'spawn <span style="color:var(--berry)">missing</span>';
+
+  list.innerHTML = '';
+
+  // the floor is always there and always first — it's the one object every
+  // world has, so it never gets lost among a long prop list
+  const floorRow = document.createElement('div');
+  floorRow.className = 'obj' + (selected === FLOOR_SEL ? ' sel' : '');
+  floorRow.tabIndex = 0;
+  floorRow.innerHTML =
+    `<span class="swatch" style="background:${floor.color}"></span>
+     <span class="nm">Floor</span>
+     <span class="ty">Ground</span>`;
+  floorRow.onclick = () => select(FLOOR_SEL);
+  floorRow.onkeydown = e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); select(FLOOR_SEL); } };
+  floorRow.ondblclick = () => { select(FLOOR_SEL); focusSelected(); };
+  list.appendChild(floorRow);
+
+  if(!objects.length){
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'Nothing else yet. Pick a shape above to place your first block.';
+    list.appendChild(empty);
+    return;
+  }
+  for(const o of objects){
+    const row = document.createElement('div');
+    row.className = 'obj' + (o === selected ? ' sel' : '');
+    row.tabIndex = 0;
+    row.innerHTML =
+      `<span class="swatch" style="background:${o.color}"></span>
+       <span class="nm">${escapeHtml(o.name)}</span>
+       <span class="ty">${TYPES[o.type].label.split(' ')[0]}</span>`;
+    row.onclick = () => select(o);
+    row.onkeydown = e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); select(o); } };
+    row.ondblclick = () => { select(o); focusSelected(); };
+    list.appendChild(row);
+  }
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+const DEG = 180 / Math.PI;
+
+function buildInspector(){
+  const el = $('inspect');
+  if(!selected){
+    el.innerHTML = `<div class="empty">Select an object to edit it.<br><br>
+      Nothing selected? Click a shape in the viewport, or pick one from the list.</div>`;
+    return;
+  }
+  if(selected === FLOOR_SEL){ buildFloorInspector(el); return; }
+  const o = selected;
+  const T = TYPES[o.type];
+  const solid = T.solid;
+
+  el.innerHTML = `
+    <div class="row"><span class="lbl">Name</span>
+      <input class="num" id="fName" style="text-align:left;font-family:Archivo" value="${escapeHtml(o.name)}"></div>
+    <div class="row"><span class="lbl">Type</span>
+      <span style="color:var(--syrup);font-weight:700;font-size:11.5px">${T.label}</span></div>
+
+    <div class="sect-head" style="margin-top:6px">Transform</div>
+    <div class="row"><span class="lbl">Position</span><div class="vec">
+      <span class="axis" data-axis="X"><input class="num" id="pX" type="number" step="${snapStep}"></span>
+      <span class="axis" data-axis="Y"><input class="num" id="pY" type="number" step="${snapStep}"></span>
+      <span class="axis" data-axis="Z"><input class="num" id="pZ" type="number" step="${snapStep}"></span>
+    </div></div>
+    <div class="row"><span class="lbl">Rotation</span><div class="vec">
+      <span class="axis" data-axis="X"><input class="num" id="rX" type="number" step="15"></span>
+      <span class="axis" data-axis="Y"><input class="num" id="rY" type="number" step="15"></span>
+      <span class="axis" data-axis="Z"><input class="num" id="rZ" type="number" step="15"></span>
+    </div></div>
+    ${solid ? `
+    <div class="row"><span class="lbl">${T.isPlatform ? 'Size' : 'Scale'}</span><div class="vec">
+      <span class="axis" data-axis="X"><input class="num" id="sX" type="number" step="${snapStep}" min="0.05"></span>
+      ${T.isPlatform ? '' : `<span class="axis" data-axis="Y"><input class="num" id="sY" type="number" step="${snapStep}" min="0.05"></span>`}
+      <span class="axis" data-axis="Z"><input class="num" id="sZ" type="number" step="${snapStep}" min="0.05"></span>
+    </div></div>` : ''}
+    ${T.isPlatform ? `
+    <div class="row"><span class="lbl">Thickness</span>
+      <select id="fThick">
+        <option value="1">1 slab (0.25 m)</option>
+        <option value="2">2 slabs (0.50 m)</option>
+      </select></div>` : ''}
+
+    ${o.type === 'itemSpawner' ? `
+    <div class="sect-head" style="margin-top:6px">Spawner</div>
+    <div class="row"><span class="lbl">Spawns</span>
+      <select id="fItem">${FLOATBOX_ITEMS.map(([k,n]) =>
+        `<option value="${k}"${k===o.item?' selected':''}>${n}</option>`).join('')}</select></div>
+    <div class="row"><span class="lbl">Button</span>
+      <input class="num" id="fSpawnLabel" style="text-align:left;font-family:Archivo" value="${escapeHtml(o.spawnLabel||'Spawn')}"></div>
+    <div class="row"><span class="lbl">Cooldown</span>
+      <input type="range" id="fCool" min="0" max="8" step="0.25" value="${o.cooldown}">
+      <span class="mono" id="vCool">${o.cooldown}s</span></div>
+    ` : ''}
+
+    ${o.type === 'playerSpawn' ? `
+    <div class="empty" style="padding:12px 13px">
+      Players drop in here facing the blue chevron. Rotate it on Y to change which way they look.
+    </div>` : ''}
+
+    ${solid ? `
+    <div class="sect-head" style="margin-top:6px">Material</div>
+    <div class="row"><span class="lbl">Colour</span>
+      <input type="color" id="fColor" value="${o.color}">
+      <span class="mono" id="vColor">${o.color}</span></div>
+    <div class="row"><span class="lbl">Metalness</span>
+      <input type="range" id="fMetal" min="0" max="1" step="0.02" value="${o.metalness}">
+      <span class="mono" id="vMetal">${o.metalness.toFixed(2)}</span></div>
+    <div class="row"><span class="lbl">Roughness</span>
+      <input type="range" id="fRough" min="0" max="1" step="0.02" value="${o.roughness}">
+      <span class="mono" id="vRough">${o.roughness.toFixed(2)}</span></div>
+    <div class="row"><span class="lbl">Gradient</span>
+      <label class="chk"><input type="checkbox" id="fGrad"${o.grad.on?' checked':''}> Blend to a second colour</label></div>
+    <div id="gradRows" style="${o.grad.on?'':'display:none'}">
+      <div class="row"><span class="lbl">Fades to</span>
+        <input type="color" id="fGrad2" value="${o.grad.color2}">
+        <span class="mono" id="vGrad2">${o.grad.color2}</span></div>
+      <div class="row"><span class="lbl">Along</span>
+        <select id="fGradAxis">
+          <option value="y"${o.grad.axis==='y'?' selected':''}>Y — bottom to top</option>
+          <option value="x"${o.grad.axis==='x'?' selected':''}>X — left to right</option>
+          <option value="z"${o.grad.axis==='z'?' selected':''}>Z — back to front</option>
+        </select></div>
+    </div>` : ''}
+
+    <div class="actions">
+      ${T.unique ? '' : '<button class="btn" id="btnDup">Duplicate</button>'}
+      <button class="btn danger" id="btnDel">Delete</button>
+    </div>
+  `;
+
+  syncInspectorValues();
+  wireInspector(o, T, solid);
+}
+
+function buildFloorInspector(el){
+  el.innerHTML = `
+    <div class="row"><span class="lbl">Name</span>
+      <span style="color:var(--ink-dim);font-size:11.5px">The Floor \u2014 every world has exactly one</span></div>
+    <div class="row"><span class="lbl">Type</span>
+      <span style="color:var(--syrup);font-weight:700;font-size:11.5px">Ground Plane</span></div>
+
+    <div class="sect-head" style="margin-top:6px">Shape</div>
+    <div class="row"><span class="lbl">Size</span>
+      <input type="range" id="flSize" min="${FLOOR_MIN_SIZE}" max="${FLOOR_MAX_SIZE}" step="4" value="${floor.size}">
+      <span class="mono" id="vFlSize">${floor.size}m</span></div>
+    <div class="row"><span class="lbl">Height</span>
+      <input type="range" id="flY" min="${FLOOR_MIN_Y}" max="${FLOOR_MAX_Y}" step="0.5" value="${floor.y}">
+      <span class="mono" id="vFlY">${floor.y.toFixed(1)}m</span></div>
+    <div class="empty" style="padding:8px 13px 4px">Locked to a square \u2014 Floatbox's collision floor is always X = Z. Height ranges from ground level down to -20m, so you can sink it into a pit.</div>
+
+    <div class="sect-head" style="margin-top:6px">Surface</div>
+    <div class="row"><span class="lbl">Style</span>
+      <select id="flStyle">
+        <option value="waffle"${floor.style==='waffle'?' selected':''}>Waffle pattern</option>
+        <option value="solid"${floor.style==='solid'?' selected':''}>Solid colour</option>
+      </select></div>
+    <div class="row"><span class="lbl">Colour</span>
+      <input type="color" id="flColor" value="${floor.color}">
+      <span class="mono" id="vFlColor">${floor.color}</span></div>
+    <div class="row"><span class="lbl">Metalness</span>
+      <input type="range" id="flMetal" min="0" max="1" step="0.02" value="${floor.metalness}">
+      <span class="mono" id="vFlMetal">${floor.metalness.toFixed(2)}</span></div>
+    <div class="row"><span class="lbl">Roughness</span>
+      <input type="range" id="flRough" min="0" max="1" step="0.02" value="${floor.roughness}">
+      <span class="mono" id="vFlRough">${floor.roughness.toFixed(2)}</span></div>
+    <div class="row"><span class="lbl">Gradient</span>
+      <label class="chk"><input type="checkbox" id="flGrad"${floor.grad.on?' checked':''}> Blend to a second colour</label></div>
+    <div id="flGradRows" style="${floor.grad.on?'':'display:none'}">
+      <div class="row"><span class="lbl">Fades to</span>
+        <input type="color" id="flGrad2" value="${floor.grad.color2}">
+        <span class="mono" id="vFlGrad2">${floor.grad.color2}</span></div>
+      <div class="row"><span class="lbl">Along</span>
+        <select id="flGradAxis">
+          <option value="x"${floor.grad.axis==='x'?' selected':''}>X</option>
+          <option value="z"${floor.grad.axis==='z'?' selected':''}>Z</option>
+        </select></div>
+    </div>
+  `;
+
+  const bind = (id, fn) => { const e = $(id); if(e) e.oninput = fn; };
+
+  bind('flSize', e => {
+    floor.size = clamp(parseFloat(e.target.value), FLOOR_MIN_SIZE, FLOOR_MAX_SIZE);
+    $('vFlSize').textContent = floor.size + 'm';
+    rebuildFloor();
+  });
+  bind('flY', e => {
+    floor.y = clamp(parseFloat(e.target.value), FLOOR_MIN_Y, FLOOR_MAX_Y);
+    $('vFlY').textContent = floor.y.toFixed(1) + 'm';
+    rebuildFloor();
+  });
+  bind('flStyle', e => { floor.style = e.target.value; rebuildFloor(); });
+  bind('flColor', e => {
+    floor.color = e.target.value; $('vFlColor').textContent = floor.color;
+    rebuildFloor(); refreshList();
+  });
+  bind('flMetal', e => {
+    floor.metalness = parseFloat(e.target.value); $('vFlMetal').textContent = floor.metalness.toFixed(2);
+    rebuildFloor();
+  });
+  bind('flRough', e => {
+    floor.roughness = parseFloat(e.target.value); $('vFlRough').textContent = floor.roughness.toFixed(2);
+    rebuildFloor();
+  });
+  bind('flGrad', e => {
+    floor.grad.on = e.target.checked;
+    $('flGradRows').style.display = floor.grad.on ? '' : 'none';
+    rebuildFloor();
+  });
+  bind('flGrad2', e => {
+    floor.grad.color2 = e.target.value; $('vFlGrad2').textContent = floor.grad.color2;
+    rebuildFloor();
+  });
+  bind('flGradAxis', e => { floor.grad.axis = e.target.value; rebuildFloor(); });
+}
+
+function wireInspector(o, T, solid){
+  const bind = (id, fn) => { const e = $(id); if(e) e.oninput = fn; };
+
+  bind('fName', e => { o.name = e.target.value || 'Object'; o.mesh.name = o.name; refreshList(); });
+
+  for(const [id, i] of [['pX',0],['pY',1],['pZ',2]]){
+    bind(id, e => { o.pos[i] = num(e.target.value); applyTransform(o); });
+  }
+  for(const [id, i] of [['rX',0],['rY',1],['rZ',2]]){
+    bind(id, e => { o.rot[i] = num(e.target.value) / DEG; applyTransform(o); });
+  }
+  for(const [id, i] of [['sX',0],['sY',1],['sZ',2]]){
+    bind(id, e => { o.scale[i] = Math.max(0.05, num(e.target.value)); applyTransform(o); });
+  }
+
+  bind('fThick', e => { o.thickness = parseInt(e.target.value); applyTransform(o); });
+
+  bind('fItem', e => { o.item = e.target.value; });
+  bind('fSpawnLabel', e => { o.spawnLabel = e.target.value; });
+  bind('fCool', e => { o.cooldown = parseFloat(e.target.value); $('vCool').textContent = o.cooldown + 's'; });
+
+  bind('fColor', e => {
+    o.color = e.target.value; $('vColor').textContent = o.color;
+    refreshMaterial(o); refreshList();
+  });
+  bind('fMetal', e => {
+    o.metalness = parseFloat(e.target.value); $('vMetal').textContent = o.metalness.toFixed(2);
+    refreshMaterial(o);
+  });
+  bind('fRough', e => {
+    o.roughness = parseFloat(e.target.value); $('vRough').textContent = o.roughness.toFixed(2);
+    refreshMaterial(o);
+  });
+  bind('fGrad', e => {
+    o.grad.on = e.target.checked;
+    $('gradRows').style.display = o.grad.on ? '' : 'none';
+    refreshMaterial(o);
+  });
+  bind('fGrad2', e => {
+    o.grad.color2 = e.target.value; $('vGrad2').textContent = o.grad.color2;
+    refreshMaterial(o);
+  });
+  bind('fGradAxis', e => { o.grad.axis = e.target.value; refreshMaterial(o); });
+
+  const dup = $('btnDup'); if(dup) dup.onclick = () => duplicateObject(o);
+  $('btnDel').onclick = () => { removeObject(o); toast('Deleted'); };
+}
+
+function num(v){ const n = parseFloat(v); return Number.isFinite(n) ? n : 0; }
+
+/* Push values into the fields without rebuilding the panel, so dragging the
+   gizmo doesn't steal focus from an input mid-edit. */
+function syncInspectorValues(){
+  if(!selected || selected === FLOOR_SEL) return;
+  const o = selected;
+  const set = (id, v) => {
+    const e = $(id);
+    if(e && document.activeElement !== e) e.value = v;
+  };
+  set('pX', round(o.pos[0])); set('pY', round(o.pos[1])); set('pZ', round(o.pos[2]));
+  set('rX', round(o.rot[0]*DEG)); set('rY', round(o.rot[1]*DEG)); set('rZ', round(o.rot[2]*DEG));
+  set('sX', round(o.scale[0])); set('sY', round(o.scale[1])); set('sZ', round(o.scale[2]));
+  const th = $('fThick'); if(th && document.activeElement !== th) th.value = String(o.thickness || 1);
+}
+function round(n){ return Math.round(n * 1000) / 1000; }
+
+/* =========================================================================
+   7. SAVE / LOAD
+   ========================================================================= */
+function serialize(){
+  return {
+    format: 'waffle',
+    version: WAFFLE_VERSION,
+    name: $('worldName').value.trim() || 'Untitled World',
+    created: new Date().toISOString(),
+    editor: 'Floatbox Studio 1.0',
+    floor: {
+      size: round(floor.size), y: round(floor.y), style: floor.style,
+      color: floor.color, mt: round(floor.metalness), rg: round(floor.roughness),
+      grad: floor.grad.on ? { c2: floor.grad.color2, ax: floor.grad.axis } : undefined
+    },
+    objects: objects.map(o => {
+      const base = {
+        t: o.type,
+        n: o.name,
+        p: o.pos.map(round),
+        r: o.rot.map(round),
+      };
+      if(TYPES[o.type].solid){
+        base.s = o.scale.map(round);
+        base.c = o.color;
+        base.mt = round(o.metalness);
+        base.rg = round(o.roughness);
+        if(o.grad.on) base.g = { c2: o.grad.color2, ax: o.grad.axis };
+        if(TYPES[o.type].isPlatform) base.th = o.thickness || 1;
+      }
+      if(o.type === 'itemSpawner'){
+        base.item = o.item;
+        base.lbl = o.spawnLabel;
+        base.cd = o.cooldown;
+      }
+      return base;
+    })
+  };
+}
+
+async function saveWaffle(){
+  if(!objects.length){ toast('Nothing to save yet', true); return; }
+  try{
+    const data = serialize();
+    const { bytes, rawSize, codec } = await encodeWaffle(data);
+    const name = (data.name || 'world').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').toLowerCase();
+    const blob = new Blob([bytes], { type: 'application/octet-stream' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${name || 'world'}.waffle`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    const pct = Math.round((1 - bytes.length / rawSize) * 100);
+    toast(codec === 1
+      ? `Saved ${objects.length} objects — ${fmtBytes(bytes.length)}, ${pct}% smaller`
+      : `Saved ${objects.length} objects — ${fmtBytes(bytes.length)} (uncompressed)`);
+    setStatus(`Saved ${a.download}`);
+  }catch(err){
+    console.error(err);
+    toast('Save failed: ' + err.message, true);
+  }
+}
+
+function fmtBytes(n){
+  return n < 1024 ? `${n} B` : `${(n/1024).toFixed(1)} KB`;
+}
+
+async function openWaffle(file){
+  try{
+    const buf = await file.arrayBuffer();
+    const data = await decodeWaffle(buf);
+    if(data.format !== 'waffle') throw new Error('That file is not a Floatbox world');
+    loadWorld(data);
+    toast(`Opened "${data.name}" — ${objects.length} objects`);
+    setStatus(`Opened ${file.name}`);
+  }catch(err){
+    console.error(err);
+    toast(err.message, true);
+  }
+}
+
+function clearWorld(){
+  for(const o of [...objects]) removeObject(o);
+  objects = [];
+  nextId = 1;
+  select(null);
+  refreshList();
+}
+
+function resetFloor(){
+  Object.assign(floor, {
+    size: 200, y: 0, style: 'waffle', color: '#c98f3a',
+    metalness: 0.02, roughness: 0.94,
+    grad: { on:false, color2:'#7a4f18', axis:'x' }
+  });
+  rebuildFloor();
+}
+
+function loadWorld(data){
+  clearWorld();
+  $('worldName').value = data.name || 'Untitled World';
+  if(data.floor){
+    Object.assign(floor, {
+      size: clamp(data.floor.size ?? 200, FLOOR_MIN_SIZE, FLOOR_MAX_SIZE),
+      y: clamp(data.floor.y ?? 0, FLOOR_MIN_Y, FLOOR_MAX_Y),
+      style: data.floor.style || 'waffle',
+      color: data.floor.color || '#c98f3a',
+      metalness: data.floor.mt ?? 0.02,
+      roughness: data.floor.rg ?? 0.94,
+      grad: data.floor.grad ? { on:true, color2:data.floor.grad.c2, axis:data.floor.grad.ax }
+                             : { on:false, color2:'#7a4f18', axis:'x' }
+    });
+    rebuildFloor();
+  }
+  for(const d of (data.objects || [])){
+    if(!TYPES[d.t]) continue;
+    const o = addObject(d.t, d.p, {
+      name: d.n,
+      color: d.c || TYPES[d.t].defaults.color,
+      metalness: d.mt ?? 0.05,
+      roughness: d.rg ?? 0.85,
+      grad: d.g ? { on:true, color2:d.g.c2, axis:d.g.ax } : { on:false, color2:'#ffffff', axis:'y' },
+      thickness: d.th || TYPES[d.t].defaults.thickness,
+      item: d.item || TYPES[d.t].defaults.item,
+      spawnLabel: d.lbl || TYPES[d.t].defaults.label,
+      cooldown: d.cd ?? TYPES[d.t].defaults.cooldown
+    });
+    if(!o) continue;
+    if(d.r) o.rot = d.r.slice();
+    if(d.s) o.scale = d.s.slice();
+    applyTransform(o);
+    refreshMaterial(o);
+  }
+  refreshList();
+  select(null);
+}
+
+/* =========================================================================
+   8. WIRING
+   ========================================================================= */
+buildPalette();
+buildInspector();
+refreshList();
+
+$('btnSave').onclick = saveWaffle;
+$('btnOpen').onclick = () => $('fileInput').click();
+$('fileInput').onchange = e => {
+  const f = e.target.files[0];
+  if(f) openWaffle(f);
+  e.target.value = '';
+};
+$('btnNew').onclick = () => {
+  if(objects.length && !confirm('Clear the world and start over? Unsaved work is lost.')) return;
+  clearWorld();
+  resetFloor();
+  $('worldName').value = 'Untitled World';
+  starterWorld();
+  toast('New world');
+};
+
+$('snapOn').onchange = e => { snapOn = e.target.checked; setStatus(snapOn ? 'Snapping on' : 'Snapping off'); };
+$('snapStep').onchange = e => {
+  snapStep = parseFloat(e.target.value);
+  $('stGrid').textContent = snapStep;
+  buildInspector();
+};
+
+for(const b of document.querySelectorAll('#modeBar button')){
+  b.onclick = () => setMode(b.dataset.mode);
+}
+function setMode(mode){
+  gizmo.setMode(mode);
+  $('stMode').textContent = mode;
+  for(const b of document.querySelectorAll('#modeBar button')){
+    b.classList.toggle('on', b.dataset.mode === mode);
+  }
+}
+
+/* drag a .waffle straight onto the window */
+addEventListener('dragover', e => { e.preventDefault(); });
+addEventListener('drop', e => {
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if(f && f.name.endsWith('.waffle')) openWaffle(f);
+  else if(f) toast('Only .waffle files, please', true);
+});
+
+addEventListener('keydown', e => {
+  const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
+  if(typing){ flyKeys.clear(); return; }
+  if(e.ctrlKey || e.metaKey) flyKeys.add('control'); else flyKeys.delete('control');
+
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd'){
+    e.preventDefault();
+    if(selected && selected !== FLOOR_SEL) duplicateObject(selected);
+    return;
+  }
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c'){
+    e.preventDefault(); copySelected(); return;
+  }
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x'){
+    e.preventDefault(); cutSelected(); return;
+  }
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v'){
+    e.preventDefault(); pasteClipboard(); return;
+  }
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's'){
+    e.preventDefault(); saveWaffle(); return;
+  }
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o'){
+    e.preventDefault(); $('fileInput').click(); return;
+  }
+
+  const k = e.key.toLowerCase();
+
+  // held movement keys — never while a modifier is down, so Ctrl+D and
+  // friends don't leave a key stuck on
+  if(!e.ctrlKey && !e.metaKey && !e.altKey){
+    if('wasdqe'.includes(k) && k.length === 1) flyKeys.add(k);
+    if(e.key === 'Shift') flyKeys.add('shift');
+  }
+
+  switch(k){
+    case 'g': setMode('translate'); break;
+    case 'r': setMode('rotate'); break;
+    case 't': setMode('scale'); break;
+    case 'f': focusSelected(); break;
+    case 'escape': select(null); break;
+    case 'delete': case 'backspace':
+      if(selected && selected !== FLOOR_SEL){ removeObject(selected); toast('Deleted'); }
+      else if(selected === FLOOR_SEL) toast('The floor cannot be deleted', true);
+      break;
+  }
+});
+
+addEventListener('keyup', e => {
+  const k = e.key.toLowerCase();
+  if(k.length === 1) flyKeys.delete(k);
+  if(e.key === 'Shift') flyKeys.delete('shift');
+  if(e.key === 'Control') flyKeys.delete('control');
+});
+// a lost focus (alt-tab mid-flight) would otherwise leave the camera drifting
+addEventListener('blur', () => flyKeys.clear());
+
+/* ---- clipboard ----
+   Stores plain data, not a reference, so the copy survives deleting the
+   original. Repeated pastes step along a diagonal instead of stacking
+   invisibly on top of each other. */
+let clipboard = null, pasteRun = 0;
+
+function copySelected(){
+  if(!selected || selected === FLOOR_SEL){
+    toast('Select an object first', true);
+    return;
+  }
+  const o = selected;
+  clipboard = {
+    type: o.type,
+    name: o.name,
+    pos: o.pos.slice(), rot: o.rot.slice(), scale: o.scale.slice(),
+    color: o.color, metalness: o.metalness, roughness: o.roughness,
+    grad: JSON.parse(JSON.stringify(o.grad)),
+    thickness: o.thickness, item: o.item,
+    spawnLabel: o.spawnLabel, cooldown: o.cooldown
+  };
+  pasteRun = 0;
+  toast(`Copied ${o.name}`);
+}
+
+function cutSelected(){
+  if(!selected || selected === FLOOR_SEL){ toast('Select an object first', true); return; }
+  const name = selected.name;
+  copySelected();
+  removeObject(selected);
+  toast(`Cut ${name}`);
+}
+
+function pasteClipboard(){
+  if(!clipboard){ toast('Nothing copied yet', true); return; }
+  if(TYPES[clipboard.type].unique && objects.some(o => o.type === clipboard.type)){
+    toast(`Only one ${TYPES[clipboard.type].label} per world`, true);
+    return;
+  }
+  pasteRun++;
+  const step = (snapOn ? snapStep : 0.5) * 4 * pasteRun;
+  const o = addObject(clipboard.type, [
+    clipboard.pos[0] + step, clipboard.pos[1], clipboard.pos[2] + step
+  ], {
+    name: nextCopyName(clipboard.name),
+    color: clipboard.color,
+    metalness: clipboard.metalness,
+    roughness: clipboard.roughness,
+    grad: JSON.parse(JSON.stringify(clipboard.grad)),
+    thickness: clipboard.thickness,
+    item: clipboard.item,
+    spawnLabel: clipboard.spawnLabel,
+    cooldown: clipboard.cooldown
+  });
+  if(!o) return;
+  o.rot = clipboard.rot.slice();
+  o.scale = clipboard.scale.slice();
+  applyTransform(o);
+  refreshMaterial(o);
+  select(o);
+  toast(`Pasted ${o.name}`);
+}
+
+/* "Ramp" -> "Ramp copy" -> "Ramp copy 2" -> "Ramp copy 3" */
+function nextCopyName(base){
+  const stem = base.replace(/ copy( \d+)?$/, '');
+  let candidate = stem + ' copy';
+  let n = 1;
+  while(objects.some(o => o.name === candidate)){
+    n++;
+    candidate = `${stem} copy ${n}`;
+  }
+  return candidate;
+}
+
+/* ---- WASD flight ----
+   Orbiting alone means you have to fight the camera to reach a far corner.
+   These pan the camera and its orbit target together, so you keep orbiting
+   around wherever you flew to. */
+const flyKeys = new Set();
+const FLY_BASE = 16;   // m/s
+
+function updateFly(dt){
+  if(!flyKeys.size) return;
+  const fwd = new THREE.Vector3();
+  camera.getWorldDirection(fwd);
+  fwd.y = 0;
+  if(fwd.lengthSq() < 1e-6) fwd.set(0, 0, -1);
+  fwd.normalize();
+  const right = new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0, 1, 0)).normalize();
+
+  const move = new THREE.Vector3();
+  if(flyKeys.has('w')) move.add(fwd);
+  if(flyKeys.has('s')) move.sub(fwd);
+  if(flyKeys.has('d')) move.add(right);
+  if(flyKeys.has('a')) move.sub(right);
+  if(flyKeys.has('e')) move.y += 1;
+  if(flyKeys.has('q')) move.y -= 1;
+  if(move.lengthSq() < 1e-6) return;
+  move.normalize();
+
+  // scale with how far out you're zoomed, so it feels the same up close and wide
+  const zoom = camera.position.distanceTo(orbit.target);
+  let speed = FLY_BASE * Math.max(0.35, Math.min(3.2, zoom / 22));
+  if(flyKeys.has('shift')) speed *= 3;
+  if(flyKeys.has('control')) speed *= 0.3;
+
+  move.multiplyScalar(speed * dt);
+  camera.position.add(move);
+  orbit.target.add(move);
+}
+
+let toastTimer = null;
+function toast(msg, bad = false){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.toggle('bad', bad);
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function setStatus(msg){ $('statusMsg').textContent = msg; }
+
+/* =========================================================================
+   9. RENDER LOOP
+   ========================================================================= */
+function resize(){
+  const w = viewEl.clientWidth, h = viewEl.clientHeight;
+  if(!w || !h) return;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+}
+addEventListener('resize', resize);
+resize();
+
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  updateFly(dt);
+  orbit.update();
+
+  // spawner halos idle-spin so they read as interactive, not scenery
+  for(const o of objects){
+    if(o.type !== 'itemSpawner') continue;
+    const halo = o.mesh.getObjectByName('halo');
+    if(halo){
+      halo.rotation.z += dt * 1.1;
+      halo.position.y = 1.28 + Math.sin(now * 0.0022 + o.id) * 0.055;
+    }
+  }
+  if(selected && selected !== FLOOR_SEL) selBox.setFromObject(selected.mesh);
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+
+/* A world that already shows what the tools do, rather than an empty grid. */
+function starterWorld(){
+  // no placeholder "base slab" here anymore — the actual Floor object is the
+  // ground, visible and editable from the object list the moment you open
+  const spawn = addObject('playerSpawn', [0, 0, 4]);
+  spawn.rot = [0, Math.PI, 0]; applyTransform(spawn);
+
+  const pad = addObject('hexagon', [-5, 0.5, -4], { name:'Hex Pad', color:'#e0a33c' });
+  pad.grad.on = true; pad.grad.color2 = '#8c4a1e'; pad.grad.axis = 'y';
+  refreshMaterial(pad);
+
+  const oct = addObject('octagon', [5, 0.5, -4], { name:'Oct Pad', color:'#c96b3a' });
+  oct.grad.on = true; oct.grad.color2 = '#3a2a55'; oct.grad.axis = 'y';
+  refreshMaterial(oct);
+
+  const ramp = addObject('ramp', [0, 1, -8], { name:'Ramp Up', color:'#5f6b7a' });
+  ramp.scale = [5, 2.5, 6]; applyTransform(ramp); refreshMaterial(ramp);
+
+  const box = addObject('cube', [-3, 1.25, 1], { name:'Block', color:'#4d9dff' });
+  box.scale = [2, 2, 2]; applyTransform(box); refreshMaterial(box);
+
+  addObject('itemSpawner', [3.5, 0.25, 2], { name:'Crate Dispenser', item:'crate', label:'Spawn' });
+
+  select(null);
+  refreshList();
+}
+
+starterWorld();
+setMode('translate');
+requestAnimationFrame(loop);
+setStatus('Ready — drop a .waffle here to open it');
+</script>
+</body>
+</html>

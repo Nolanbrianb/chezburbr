@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1a73e8">
+<title>Scribble Maps</title>
+<style>
+  :root{
+    --blue:#1a73e8;
+    --blue-d:#1765cc;
+    --green:#34a853;
+    --red:#ea4335;
+    --ink:#202124;
+    --grey:#5f6368;
+    --line:#dadce0;
+    --bg:#ffffff;
+    --route:#1a73e8;
+    --sheet-shadow:0 -2px 16px rgba(0,0,0,.18);
+    --font:"Roboto", system-ui, "Helvetica Neue", Arial, sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;background:#202124;font-family:var(--font);overscroll-behavior:none;}
+  body{display:flex;align-items:center;justify-content:center;}
+
+  .phone{
+    position:relative;
+    width:360px;
+    height:640px;            /* fixed base so the frame can never collapse */
+    max-width:100vw;
+    max-height:100vh;
+    background:var(--bg);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 10px 60px rgba(0,0,0,.5);
+  }
+  @supports (height:100dvh){
+    .phone{ max-height:100dvh; }   /* progressive enhancement, never required */
+  }
+
+  /* ===== top search bar ===== */
+  .topbar{
+    position:absolute;top:0;left:0;right:0;z-index:30;
+    padding:10px 12px;
+    pointer-events:none;
+  }
+  .searchpill{
+    pointer-events:auto;
+    height:46px;border-radius:23px;background:#fff;
+    box-shadow:0 1px 6px rgba(0,0,0,.28);
+    display:flex;align-items:center;gap:10px;padding:0 8px 0 14px;
+  }
+  .searchpill .menu{font-size:20px;color:var(--grey);line-height:1;}
+  .searchpill input{
+    flex:1;border:0;outline:0;font-family:var(--font);font-size:15px;color:var(--ink);background:transparent;
+  }
+  .searchpill input::placeholder{color:#9aa0a6;}
+  .searchpill .gear{
+    width:32px;height:32px;border-radius:50%;display:grid;place-items:center;
+    color:var(--grey);font-size:18px;cursor:pointer;
+  }
+  .searchpill .gear:active{background:#f1f3f4;}
+
+  /* ===== map ===== */
+  #map{position:absolute;inset:0;display:block;touch-action:none;z-index:1;}
+
+  /* hint chip while drawing */
+  .hint{
+    position:absolute;left:50%;top:70px;transform:translateX(-50%);
+    z-index:20;background:rgba(32,33,36,.92);color:#fff;
+    font-size:12.5px;font-weight:500;padding:7px 14px;border-radius:16px;
+    box-shadow:0 2px 8px rgba(0,0,0,.3);white-space:nowrap;pointer-events:none;
+    transition:opacity .25s;letter-spacing:.2px;
+  }
+
+  /* small recalculating toast */
+  .toast{
+    position:absolute;left:50%;top:120px;transform:translateX(-50%) translateY(-6px);
+    z-index:26;background:#fef7e0;color:#7a5b00;border:1px solid #fde293;
+    font-size:12px;font-weight:600;padding:6px 12px;border-radius:14px;
+    box-shadow:0 2px 8px rgba(0,0,0,.18);opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ===== bottom draw controls ===== */
+  .controls{
+    position:absolute;left:0;right:0;bottom:0;z-index:25;
+    background:#fff;border-top:1px solid var(--line);
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    box-shadow:var(--sheet-shadow);
+  }
+  .controls .row{display:flex;gap:8px;}
+  .iconbtn{
+    flex:0 0 auto;height:42px;min-width:42px;padding:0 12px;border-radius:21px;
+    border:1px solid var(--line);background:#fff;color:var(--grey);
+    font-family:var(--font);font-size:13px;font-weight:600;
+    display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;
+  }
+  .iconbtn:active{background:#f1f3f4;}
+  .iconbtn.on{background:#e8f0fe;border-color:#d2e3fc;color:var(--blue);}
+  .iconbtn:disabled{opacity:.4;cursor:default;}
+  .go{
+    flex:1;height:42px;border:0;border-radius:21px;background:var(--blue);color:#fff;
+    font-family:var(--font);font-size:15px;font-weight:600;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .go:active{background:var(--blue-d);}
+  .go:disabled{background:#c6c6c6;cursor:default;}
+
+  /* ===== navigation banner (top) ===== */
+  .navbanner{
+    position:absolute;left:0;right:0;top:0;z-index:35;
+    background:var(--blue);color:#fff;
+    padding:calc(10px + env(safe-area-inset-top)) 14px 14px;
+    display:none;align-items:center;gap:14px;
+    box-shadow:0 2px 10px rgba(0,0,0,.25);
+  }
+  .navbanner.show{display:flex;}
+  .navbanner .arrow{flex:0 0 auto;width:46px;height:46px;}
+  .navbanner .arrow svg{width:100%;height:100%;display:block;}
+  .navbanner .txt{flex:1;min-width:0;}
+  .navbanner .dist{font-size:24px;font-weight:700;line-height:1.05;letter-spacing:.2px;}
+  .navbanner .road{font-size:14px;font-weight:400;opacity:.95;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .navbanner .then{font-size:11px;opacity:.8;margin-top:4px;}
+
+  /* ===== navigation bottom bar ===== */
+  .navbottom{
+    position:absolute;left:0;right:0;bottom:0;z-index:35;
+    background:#fff;border-top:1px solid var(--line);
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    display:none;align-items:center;gap:12px;box-shadow:var(--sheet-shadow);
+  }
+  .navbottom.show{display:flex;}
+  .navbottom .eta{flex:1;min-width:0;}
+  .navbottom .eta .min{font-size:20px;font-weight:700;color:var(--green);line-height:1.1;}
+  .navbottom .eta .sub{font-size:13px;color:var(--grey);margin-top:1px;}
+  .navbottom .gpschip{
+    font-size:11px;font-weight:600;color:var(--blue);background:#e8f0fe;
+    padding:5px 9px;border-radius:12px;display:none;align-items:center;gap:5px;
+  }
+  .navbottom .gpschip.show{display:flex;}
+  .navbottom .gpschip .ping{width:7px;height:7px;border-radius:50%;background:var(--blue);animation:ping 1.4s infinite;}
+  @keyframes ping{0%{opacity:.3;}50%{opacity:1;}100%{opacity:.3;}}
+  .endbtn{
+    flex:0 0 auto;height:40px;padding:0 18px;border-radius:20px;border:0;
+    background:var(--red);color:#fff;font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;
+  }
+  .endbtn:active{filter:brightness(.92);}
+
+  /* tap-to-advance hint */
+  .tapadv{
+    position:absolute;left:50%;bottom:96px;transform:translateX(-50%);
+    z-index:34;background:rgba(32,33,36,.9);color:#fff;font-size:12px;font-weight:500;
+    padding:7px 14px;border-radius:16px;display:none;pointer-events:none;
+    animation:bob 1.8s ease-in-out infinite;
+  }
+  .tapadv.show{display:block;}
+  @keyframes bob{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-4px);}}
+
+  /* ===== bottom sheets (settings / gps distances) ===== */
+  .scrim{position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:40;opacity:0;pointer-events:none;transition:opacity .22s;}
+  .scrim.show{opacity:1;pointer-events:auto;}
+  .sheet{
+    position:absolute;left:0;right:0;bottom:0;z-index:41;
+    background:#fff;border-radius:18px 18px 0 0;
+    transform:translateY(110%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
+    padding:8px 18px calc(20px + env(safe-area-inset-bottom));
+    max-height:86%;overflow-y:auto;box-shadow:var(--sheet-shadow);
+  }
+  .sheet.show{transform:translateY(0);}
+  .grab{width:36px;height:4px;border-radius:2px;background:#dadce0;margin:6px auto 12px;}
+  .sheet h2{font-size:17px;font-weight:600;color:var(--ink);margin:0 0 14px;}
+  .setrow{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-top:1px solid #f1f3f4;}
+  .setrow:first-of-type{border-top:0;}
+  .setrow .label{font-size:14px;color:var(--ink);font-weight:500;}
+  .setrow .desc{font-size:12px;color:var(--grey);margin-top:2px;max-width:200px;}
+
+  /* segmented control */
+  .seg{display:flex;background:#f1f3f4;border-radius:10px;padding:3px;}
+  .seg button{
+    border:0;background:transparent;font-family:var(--font);font-size:12.5px;font-weight:600;
+    color:var(--grey);padding:7px 11px;border-radius:8px;cursor:pointer;
+  }
+  .seg button.active{background:#fff;color:var(--blue);box-shadow:0 1px 3px rgba(0,0,0,.16);}
+
+  /* toggle switch */
+  .sw{position:relative;width:44px;height:26px;flex:0 0 auto;}
+  .sw input{opacity:0;width:0;height:0;}
+  .sw .track{position:absolute;inset:0;background:#bdc1c6;border-radius:13px;transition:background .2s;}
+  .sw .knob{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3);}
+  .sw input:checked + .track{background:#a8c7fa;}
+  .sw input:checked + .track + .knob{transform:translateX(18px);background:var(--blue);}
+  .sw input:disabled + .track{opacity:.5;}
+
+  /* colors */
+  .colorgrid{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px;}
+  .swatch{width:36px;height:36px;border-radius:50%;cursor:pointer;border:3px solid transparent;position:relative;}
+  .swatch.active{border-color:var(--ink);}
+  .swatch.active::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:2px solid #c6c6c6;}
+
+  /* gps segment list */
+  .leglist{margin-top:4px;}
+  .legrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #f1f3f4;}
+  .legrow:first-child{border-top:0;}
+  .legbadge{width:26px;height:26px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:700;}
+  .legrow .leglabel{flex:1;font-size:13px;color:var(--ink);}
+  .legrow input[type=number]{
+    width:74px;height:38px;border:1px solid var(--line);border-radius:8px;text-align:right;
+    font-family:var(--font);font-size:15px;color:var(--ink);padding:0 8px;outline:0;
+  }
+  .legrow input:focus{border-color:var(--blue);}
+  .legrow select{
+    height:38px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);
+    font-size:13px;color:var(--ink);padding:0 6px;background:#fff;outline:0;
+  }
+  .sheet .primary{
+    width:100%;height:46px;margin-top:16px;border:0;border-radius:23px;background:var(--blue);
+    color:#fff;font-family:var(--font);font-size:15px;font-weight:600;cursor:pointer;
+  }
+  .sheet .primary:active{background:var(--blue-d);}
+  .sheet .note{font-size:11.5px;color:var(--grey);margin-top:10px;line-height:1.5;}
+
+  /* arrival overlay */
+  .arrival{
+    position:absolute;inset:0;z-index:50;background:rgba(52,168,83,.97);color:#fff;
+    display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:30px;
+  }
+  .arrival.show{display:flex;animation:fade .35s;}
+  @keyframes fade{from{opacity:0;}to{opacity:1;}}
+  .arrival .check{width:88px;height:88px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;}
+  .arrival .check svg{width:48px;height:48px;}
+  .arrival h1{font-size:24px;font-weight:700;margin:0;}
+  .arrival p{font-size:15px;margin:0;opacity:.92;max-width:240px;line-height:1.4;}
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+
+  <canvas id="map"></canvas>
+
+  <!-- top search bar -->
+  <div class="topbar" id="topbar">
+    <div class="searchpill">
+      <span class="menu" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="#5f6368" stroke-width="2" stroke-linecap="round"/></svg>
+      </span>
+      <input id="search" placeholder="Where to? (just scribble it)" readonly>
+      <div class="gear" id="gearBtn" aria-label="Settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#5f6368"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l1.86-1.46a.5.5 0 0 0 .12-.61l-1.76-3.05a.5.5 0 0 0-.6-.22l-2.2.88a6.6 6.6 0 0 0-1.69-.98l-.33-2.34a.5.5 0 0 0-.49-.41h-3.52a.5.5 0 0 0-.49.41l-.33 2.34c-.62.25-1.18.59-1.69.98l-2.2-.88a.5.5 0 0 0-.6.22L2.45 8.95a.5.5 0 0 0 .12.61l1.86 1.46c-.04.32-.07.65-.07.98s.03.66.07.98l-1.86 1.46a.5.5 0 0 0-.12.61l1.76 3.05c.13.22.39.3.6.22l2.2-.88c.51.39 1.07.73 1.69.98l.33 2.34c.04.24.25.41.49.41h3.52c.24 0 .45-.17.49-.41l.33-2.34c.62-.25 1.18-.59 1.69-.98l2.2.88c.21.08.47 0 .6-.22l1.76-3.05a.5.5 0 0 0-.12-.61l-1.86-1.46Z"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="hint" id="hint">Tap to drop stops, then Calculate route</div>
+  <div class="toast" id="toast">Recalculating…</div>
+
+  <!-- navigation banner -->
+  <div class="navbanner" id="navbanner">
+    <div class="arrow" id="navArrow"></div>
+    <div class="txt">
+      <div class="dist" id="navDist">200 ft</div>
+      <div class="road" id="navRoad">Turn left onto Maple St</div>
+      <div class="then" id="navThen"></div>
+    </div>
+  </div>
+
+  <!-- tap to advance hint -->
+  <div class="tapadv" id="tapadv">Tap anywhere to drive →</div>
+
+  <!-- draw controls -->
+  <div class="controls" id="controls">
+    <div class="row" style="margin-bottom:8px;">
+      <button class="iconbtn" id="undoBtn" title="Undo">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 7 4 12l5 5M4 12h11a5 5 0 0 1 0 10h-1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Undo
+      </button>
+      <button class="iconbtn" id="clearBtn" title="Clear">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 7h14M10 7V5h4v2M6 7l1 13h10l1-13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Clear
+      </button>
+      <button class="iconbtn" id="panBtn" title="Move map">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3v18M3 12h18M12 3 9.5 5.5M12 3l2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5M3 12l2.5-2.5M3 12l2.5 2.5M21 12l-2.5-2.5M21 12l-2.5 2.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Move map
+      </button>
+    </div>
+    <div class="row">
+      <button class="go" id="goBtn" disabled>Calculate route</button>
+    </div>
+  </div>
+
+  <!-- nav bottom bar -->
+  <div class="navbottom" id="navbottom">
+    <div class="eta">
+      <div class="min" id="etaMin">2 min</div>
+      <div class="sub" id="etaSub">14 ft · arrive 3:42 PM</div>
+    </div>
+    <div class="gpschip" id="gpschip"><span class="ping"></span>GPS</div>
+    <button class="endbtn" id="endBtn">End</button>
+  </div>
+
+  <!-- settings sheet -->
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet" id="settingsSheet">
+    <div class="grab"></div>
+    <h2>Settings</h2>
+
+    <div class="setrow">
+      <div>
+        <div class="label">Route input</div>
+        <div class="desc">Manual: tap to drop stops. Auto: draw freehand and it finds the turns.</div>
+      </div>
+      <div class="seg" id="modeSeg">
+        <button data-mode="manual" class="active">Manual</button>
+        <button data-mode="auto">Auto</button>
+      </div>
+    </div>
+
+    <div class="setrow">
+      <div>
+        <div class="label">GPS follow</div>
+        <div class="desc" id="gpsDesc">Off by default — your real location can be jittery. Manual mode only.</div>
+      </div>
+      <label class="sw">
+        <input type="checkbox" id="gpsToggle">
+        <span class="track"></span><span class="knob"></span>
+      </label>
+    </div>
+
+    <div class="setrow" style="flex-direction:column;align-items:flex-start;gap:10px;">
+      <div class="label">Route &amp; dot color</div>
+      <div class="colorgrid" id="colorGrid"></div>
+    </div>
+
+    <div class="note">It's not a real map. The line you scribble is the road. Drive safely (you won't).</div>
+  </div>
+
+  <!-- gps distance sheet -->
+  <div class="sheet" id="gpsSheet">
+    <div class="grab"></div>
+    <h2>How long is each leg?</h2>
+    <div class="desc" style="font-size:12.5px;color:var(--grey);margin:-6px 0 10px;">
+      GPS follow needs real distances so it can track you between stops.
+    </div>
+    <div class="leglist" id="legList"></div>
+    <button class="primary" id="gpsStartBtn">Start navigation</button>
+    <div class="note">Tip: pace it out and guess. Precision is not this app's strength.</div>
+  </div>
+
+  <!-- arrival -->
+  <div class="arrival" id="arrival">
+    <div class="check">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <h1>You have arrived</h1>
+    <p id="arriveSub">Your destination is on the right. Probably.</p>
+  </div>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* The "ResizeObserver loop" notice is harmless but the sandbox treats any
+   uncaught error as fatal and blanks the app. Swallow just that one. */
+window.addEventListener('error', function(e){
+  if(e && e.message && /ResizeObserver loop/.test(e.message)){
+    e.stopImmediatePropagation(); e.preventDefault(); return false;
+  }
+}, true);
+
+/* ---------- elements ---------- */
+const phone=document.getElementById('phone');
+const canvas=document.getElementById('map');
+const ctx=canvas.getContext('2d');
+const hint=document.getElementById('hint');
+const toastEl=document.getElementById('toast');
+const controls=document.getElementById('controls');
+const goBtn=document.getElementById('goBtn');
+const undoBtn=document.getElementById('undoBtn');
+const clearBtn=document.getElementById('clearBtn');
+const panBtn=document.getElementById('panBtn');
+const navbanner=document.getElementById('navbanner');
+const navArrow=document.getElementById('navArrow');
+const navDist=document.getElementById('navDist');
+const navRoad=document.getElementById('navRoad');
+const navThen=document.getElementById('navThen');
+const navbottom=document.getElementById('navbottom');
+const etaMin=document.getElementById('etaMin');
+const etaSub=document.getElementById('etaSub');
+const gpschip=document.getElementById('gpschip');
+const endBtn=document.getElementById('endBtn');
+const tapadv=document.getElementById('tapadv');
+const gearBtn=document.getElementById('gearBtn');
+const scrim=document.getElementById('scrim');
+const settingsSheet=document.getElementById('settingsSheet');
+const gpsSheet=document.getElementById('gpsSheet');
+const modeSeg=document.getElementById('modeSeg');
+const gpsToggle=document.getElementById('gpsToggle');
+const gpsDesc=document.getElementById('gpsDesc');
+const colorGrid=document.getElementById('colorGrid');
+const legList=document.getElementById('legList');
+const gpsStartBtn=document.getElementById('gpsStartBtn');
+const arrival=document.getElementById('arrival');
+const arriveSub=document.getElementById('arriveSub');
+const topbar=document.getElementById('topbar');
+
+/* ---------- state ---------- */
+const state={
+  mode:'manual',          // 'manual' | 'auto'
+  gps:false,
+  color:'#1a73e8',
+  app:'draw',             // 'draw' | 'nav' | 'arrived'
+  panning:false,          // move-map toggle in draw mode
+  points:[],              // world coords for manual stops OR raw freehand
+  freehand:[],            // raw freehand points while drawing (auto mode)
+  route:null,             // computed: {wps, legs, totalPx}
+  cam:{x:0,y:0},          // world coord shown at canvas center
+  camTarget:{x:0,y:0},
+  follow:false,
+  dot:{x:0,y:0},          // dot world pos
+  legIndex:0,
+  legProgress:0,          // 0..1 along current leg (tap mode glide)
+  gliding:false,
+  // gps tracking
+  watchId:null,
+  lastFix:null,
+  walkedM:0,
+  totalRouteM:0,
+};
+
+const COLORS=[
+  {name:'Maps blue',hex:'#1a73e8'},
+  {name:'Orange',hex:'#f9923b'},
+  {name:'Green',hex:'#34a853'},
+  {name:'Red',hex:'#ea4335'},
+  {name:'Purple',hex:'#9334e8'},
+  {name:'Pink',hex:'#e91e8c'},
+  {name:'Teal',hex:'#00acc1'},
+  {name:'Black',hex:'#202124'},
+];
+
+const STREETS=["Maple St","Nowhere Rd","Squiggle St","Probably Ave","Doom Dr","Vibes Only Way",
+  "Big Mistake Blvd","Crayon Ln","Lost Cause Ct","Definitely Not St","Why Walk Ln","Loop-de-Loop",
+  "Regret Row","Elm St","Wobble Way","Past Tense Pl","Wrong Turn Trl","Final Answer Ave"];
+
+/* ---------- canvas sizing ---------- */
+let CW=360, CH=640, dpr=1, resizeQueued=false;
+function doResize(){
+  resizeQueued=false;
+  const r=canvas.getBoundingClientRect();
+  if(!r.width || !r.height) return;
+  CW=r.width; CH=r.height;
+  dpr=Math.min(window.devicePixelRatio||1, 3);
+  const w=Math.round(CW*dpr), h=Math.round(CH*dpr);
+  if(canvas.width!==w || canvas.height!==h){   // only write when it truly changed
+    canvas.width=w; canvas.height=h;
+  }
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function scheduleResize(){
+  if(resizeQueued) return;
+  resizeQueued=true;
+  requestAnimationFrame(doResize);             // defer out of the observer callback
+}
+window.addEventListener('resize', scheduleResize);
+window.addEventListener('orientationchange', scheduleResize);
+try{ new ResizeObserver(scheduleResize).observe(canvas); }catch(e){}
+
+/* ---------- coordinate helpers ---------- */
+function screenToWorld(sx,sy){ return {x: sx-CW/2 + state.cam.x, y: sy-CH/2 + state.cam.y}; }
+function worldToScreen(wx,wy){ return {x: wx-state.cam.x + CW/2, y: wy-state.cam.y + CH/2}; }
+function dist(a,b){ const dx=a.x-b.x, dy=a.y-b.y; return Math.hypot(dx,dy); }
+
+/* ---------- color setup ---------- */
+COLORS.forEach(c=>{
+  const el=document.createElement('div');
+  el.className='swatch'+(c.hex===state.color?' active':'');
+  el.style.background=c.hex; el.title=c.name; el.dataset.hex=c.hex;
+  el.addEventListener('click',()=>{
+    state.color=c.hex;
+    document.documentElement.style.setProperty('--route',c.hex);
+    [...colorGrid.children].forEach(s=>s.classList.toggle('active',s.dataset.hex===c.hex));
+  });
+  colorGrid.appendChild(el);
+});
+
+/* ============================================================
+   DRAWING / INPUT
+   ============================================================ */
+let pointer={down:false,id:null,startX:0,startY:0,lastX:0,lastY:0,moved:false,camStart:null};
+
+canvas.addEventListener('pointerdown',e=>{
+  if(state.app==='nav'){
+    if(!state.gps) advance();           // tap to drive
+    return;
+  }
+  if(state.app!=='draw') return;
+  canvas.setPointerCapture(e.pointerId);
+  pointer.down=true; pointer.id=e.pointerId;
+  pointer.startX=pointer.lastX=e.offsetX; pointer.startY=pointer.lastY=e.offsetY;
+  pointer.moved=false; pointer.camStart={x:state.cam.x,y:state.cam.y};
+  if(state.mode==='auto' && !state.panning){
+    state.freehand=[ screenToWorld(e.offsetX,e.offsetY) ];
+  }
+});
+
+canvas.addEventListener('pointermove',e=>{
+  if(!pointer.down || e.pointerId!==pointer.id) return;
+  const dx=e.offsetX-pointer.startX, dy=e.offsetY-pointer.startY;
+  if(Math.abs(dx)>4||Math.abs(dy)>4) pointer.moved=true;
+
+  if(state.panning){
+    state.cam.x = pointer.camStart.x - (e.offsetX-pointer.startX);
+    state.cam.y = pointer.camStart.y - (e.offsetY-pointer.startY);
+  } else if(state.mode==='auto'){
+    const w=screenToWorld(e.offsetX,e.offsetY);
+    const last=state.freehand[state.freehand.length-1];
+    if(!last || dist(last,w)>3) state.freehand.push(w);
+  }
+  pointer.lastX=e.offsetX; pointer.lastY=e.offsetY;
+});
+
+canvas.addEventListener('pointerup',e=>{
+  if(e.pointerId!==pointer.id) return;
+  pointer.down=false;
+  if(state.app!=='draw') return;
+
+  if(state.panning){ /* was panning */ }
+  else if(state.mode==='manual'){
+    if(!pointer.moved){                 // a real tap -> drop stop
+      state.points.push(screenToWorld(e.offsetX,e.offsetY));
+    }
+  } else { // auto
+    if(state.freehand.length>2){
+      // commit this stroke as the point set (replace, single continuous draw)
+      state.points = simplify(state.freehand, 6);
+    }
+  }
+  updateDrawUI();
+});
+
+canvas.addEventListener('pointercancel',()=>{pointer.down=false;});
+
+/* Ramer–Douglas–Peucker for auto mode */
+function simplify(pts, eps){
+  if(pts.length<3) return pts.slice();
+  function rdp(s,e){
+    let dmax=0, idx=-1;
+    const A=pts[s], B=pts[e];
+    for(let i=s+1;i<e;i++){
+      const d=perp(pts[i],A,B);
+      if(d>dmax){dmax=d;idx=i;}
+    }
+    if(dmax>eps){
+      const left=rdp(s,idx), right=rdp(idx,e);
+      return left.slice(0,-1).concat(right);
+    }
+    return [pts[s],pts[e]];
+  }
+  return rdp(0,pts.length-1);
+}
+function perp(p,a,b){
+  const dx=b.x-a.x, dy=b.y-a.y;
+  const L=Math.hypot(dx,dy)||1;
+  return Math.abs((p.x-a.x)*dy-(p.y-a.y)*dx)/L;
+}
+
+/* ---------- draw-mode UI ---------- */
+function updateDrawUI(){
+  const n = state.points.length;
+  goBtn.disabled = n<2;
+  if(state.panning){ hint.textContent='Drag to move the map'; }
+  else if(state.mode==='manual'){
+    hint.textContent = n===0 ? 'Tap to drop your starting point'
+                     : n===1 ? 'Tap to add stops along your route'
+                     : 'Add more stops, or Calculate route';
+  } else {
+    hint.textContent = n<2 ? 'Draw your route with one finger'
+                     : 'Nice scribble. Calculate route!';
+  }
+}
+
+undoBtn.addEventListener('click',()=>{
+  if(state.mode==='manual') state.points.pop();
+  else { state.points=[]; state.freehand=[]; }
+  updateDrawUI();
+});
+clearBtn.addEventListener('click',()=>{
+  state.points=[]; state.freehand=[];
+  state.cam.x=0; state.cam.y=0;
+  updateDrawUI();
+});
+panBtn.addEventListener('click',()=>{
+  state.panning=!state.panning;
+  panBtn.classList.toggle('on',state.panning);
+  updateDrawUI();
+});
+
+/* ============================================================
+   ROUTE BUILDING + INSTRUCTIONS
+   ============================================================ */
+function compass(dx,dy){
+  // screen y is down; real-world north is up (-dy)
+  const ang=(Math.atan2(dx,-dy)*180/Math.PI+360)%360; // 0=N,90=E
+  const dirs=['north','northeast','east','southeast','south','southwest','west','northwest'];
+  return dirs[Math.round(ang/45)%8];
+}
+
+function classifyTurn(prev,cur,next){
+  const v1={x:cur.x-prev.x,y:cur.y-prev.y};
+  const v2={x:next.x-cur.x,y:next.y-cur.y};
+  const dot=v1.x*v2.x+v1.y*v2.y;
+  const cross=v1.x*v2.y-v1.y*v2.x;
+  const ang=Math.atan2(cross,dot)*180/Math.PI; // signed
+  const mag=Math.abs(ang);
+  const right = cross>0; // screen y-down: positive cross = clockwise = right
+  const side = right?'Right':'Left';
+  if(mag<12) return {key:'straight', text:'Continue straight'};
+  if(mag<50) return {key:right?'slightRight':'slightLeft', text:'Slight '+side.toLowerCase()};
+  if(mag<118) return {key:right?'right':'left', text:'Turn '+side.toLowerCase()};
+  if(mag<162) return {key:right?'sharpRight':'sharpLeft', text:'Sharp '+side.toLowerCase()};
+  return {key:'uturn', text:'Make a U-turn'};
+}
+
+function buildRoute(){
+  const wps=state.points.map(p=>({x:p.x,y:p.y}));
+  const legs=[];
+  let totalPx=0;
+  for(let i=0;i<wps.length-1;i++){
+    const from=wps[i], to=wps[i+1];
+    const len=dist(from,to); totalPx+=len;
+    let maneuver, road;
+    if(i+1===wps.length-1){
+      maneuver={key:'arrive',text:'Arrive at destination'};
+      road='Arrive at destination';
+    } else {
+      maneuver=classifyTurn(wps[i],wps[i+1],wps[i+2]);
+      road=maneuver.text+' onto '+pick(STREETS,i+1);
+    }
+    legs.push({from,to,len,maneuver,road});
+  }
+  // first leg flavour: head <compass>
+  if(legs.length){
+    const f=legs[0];
+    f.head='Head '+compass(f.to.x-f.from.x, f.to.y-f.from.y);
+  }
+  return {wps,legs,totalPx};
+}
+function pick(arr,seed){ return arr[(seed*7+3)%arr.length]; }
+
+/* ---------- arrow svg ---------- */
+function arrowSVG(key,color){
+  color=color||'#fff';
+  const bearings={straight:0,slightRight:40,right:90,sharpRight:140,
+                  slightLeft:-40,left:-90,sharpLeft:-140};
+  if(key==='arrive'){
+    return `<svg viewBox="0 0 48 48"><circle cx="24" cy="20" r="9" fill="none" stroke="${color}" stroke-width="4.5"/><circle cx="24" cy="20" r="2.6" fill="${color}"/><path d="M24 29 L24 42" stroke="${color}" stroke-width="4.5" stroke-linecap="round"/></svg>`;
+  }
+  if(key==='uturn'){
+    return `<svg viewBox="0 0 48 48"><path d="M15 42 L15 24 A9 9 0 0 1 33 24 L33 33" fill="none" stroke="${color}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 41 L27 33 M33 41 L39 33" fill="none" stroke="${color}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+  const b=(bearings[key]||0)*Math.PI/180;
+  const dx=Math.sin(b), dy=-Math.cos(b);
+  const px=24, py=22;                 // pivot
+  const sx=24, sy=42;                 // shaft base
+  const L=17;
+  const tx=px+dx*L, ty=py+dy*L;       // tip
+  // arrowhead
+  const ha=35*Math.PI/180, hl=8;
+  const ax=-dx, ay=-dy; // back dir
+  const r=(vx,vy,a)=>({x:vx*Math.cos(a)-vy*Math.sin(a), y:vx*Math.sin(a)+vy*Math.cos(a)});
+  const w1=r(ax,ay,ha), w2=r(ax,ay,-ha);
+  return `<svg viewBox="0 0 48 48">
+    <path d="M${sx} ${sy} L${px} ${py} L${tx.toFixed(1)} ${ty.toFixed(1)}" fill="none" stroke="${color}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M${tx.toFixed(1)} ${ty.toFixed(1)} L${(tx+w1.x*hl).toFixed(1)} ${(ty+w1.y*hl).toFixed(1)} M${tx.toFixed(1)} ${ty.toFixed(1)} L${(tx+w2.x*hl).toFixed(1)} ${(ty+w2.y*hl).toFixed(1)}" fill="none" stroke="${color}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+/* ============================================================
+   START NAVIGATION
+   ============================================================ */
+goBtn.addEventListener('click',()=>{
+  if(state.points.length<2) return;
+  state.route=buildRoute();
+  if(state.gps){ openGpsSheet(); }
+  else { startNav(); }
+});
+
+function startNav(){
+  state.app='nav';
+  state.panning=false; panBtn.classList.remove('on');
+  state.legIndex=0; state.legProgress=0; state.gliding=false;
+  state.follow=true;
+  state.dot={...state.route.wps[0]};
+  state.camTarget={...state.dot}; state.cam={...state.dot};
+  // ui
+  controls.classList.remove('show'); controls.style.display='none';
+  topbar.style.display='none';
+  hint.style.opacity='0';
+  navbanner.classList.add('show');
+  navbottom.classList.add('show');
+  gpschip.classList.toggle('show',state.gps);
+  tapadv.classList.toggle('show',!state.gps);
+  updateBanner();
+  if(state.gps) startGps();
+}
+
+function endNav(){
+  stopGps();
+  state.app='draw'; state.follow=false;
+  navbanner.classList.remove('show');
+  navbottom.classList.remove('show');
+  tapadv.classList.remove('show');
+  arrival.classList.remove('show');
+  controls.style.display=''; controls.classList.add('show');
+  topbar.style.display='';
+  hint.style.opacity='1';
+  // reset route
+  state.points=[]; state.freehand=[]; state.route=null;
+  state.cam={x:0,y:0}; state.camTarget={x:0,y:0};
+  updateDrawUI();
+}
+endBtn.addEventListener('click',endNav);
+
+/* ---------- banner + eta ---------- */
+function pxToFeet(px){ return Math.max(1, Math.round(px*0.6)); } // fake scale
+
+function legRealMeters(i){
+  // GPS mode uses assigned distances; else fake from px
+  if(state.gps && state.route.legs[i].meters!=null) return state.route.legs[i].meters;
+  return pxToFeet(state.route.legs[i].len)*0.3048;
+}
+
+function distLabel(i){
+  if(state.gps && state.route.legs[i].meters!=null){
+    return state.route.legs[i].distText;
+  }
+  const ft=pxToFeet(state.route.legs[i].len);
+  return ft>=528 ? (ft/5280).toFixed(1)+' mi' : ft+' ft';
+}
+
+function updateBanner(){
+  const i=state.legIndex;
+  const leg=state.route.legs[i];
+  if(!leg){ doArrive(); return; }
+  navArrow.innerHTML=arrowSVG(leg.maneuver.key);
+  navDist.textContent=distLabel(i);
+  navRoad.textContent=leg.road;
+  // "then" preview
+  const nxt=state.route.legs[i+1];
+  navThen.textContent = nxt ? ('Then: '+nxt.maneuver.text) : '';
+  if(i===0 && leg.head && state.legProgress<0.02){
+    navRoad.textContent=leg.head;
+  }
+  updateEta();
+}
+
+function updateEta(){
+  // remaining distance
+  let remM=0;
+  const i=state.legIndex;
+  for(let k=i;k<state.route.legs.length;k++){
+    let m=legRealMeters(k);
+    if(k===i) m*= (1-state.legProgress);
+    remM+=m;
+  }
+  const remFt=remM/0.3048;
+  const speed=1.4; // m/s walking
+  const secs=Math.max(1, Math.round(remM/speed));
+  const mins=Math.max(1, Math.round(secs/60));
+  etaMin.textContent = secs<60 ? secs+' sec' : mins+' min';
+  const arrive=new Date(Date.now()+secs*1000);
+  const t=arrive.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+  const dtxt = remFt>=528 ? (remFt/5280).toFixed(1)+' mi' : Math.round(remFt)+' ft';
+  etaSub.textContent = dtxt+' · arrive '+t;
+}
+
+/* ---------- tap-to-advance glide ---------- */
+function advance(){
+  if(state.gliding) return;
+  if(state.legIndex>=state.route.legs.length){ doArrive(); return; }
+  // occasional recalculating gag
+  if(Math.random()<0.14){ flashToast(); }
+  state.gliding=true;
+  const leg=state.route.legs[state.legIndex];
+  const from={...state.dot};
+  const to={...leg.to};
+  const dur=700;
+  const t0=performance.now();
+  function step(t){
+    let p=Math.min(1,(t-t0)/dur);
+    const e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2; // easeInOut
+    state.dot.x=from.x+(to.x-from.x)*e;
+    state.dot.y=from.y+(to.y-from.y)*e;
+    state.legProgress=e;
+    state.camTarget={...state.dot};
+    updateEta();
+    if(p<1){ requestAnimationFrame(step); }
+    else {
+      state.gliding=false;
+      state.legIndex++;
+      state.legProgress=0;
+      if(state.legIndex>=state.route.legs.length){ doArrive(); }
+      else updateBanner();
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+function flashToast(){
+  toastEl.classList.add('show');
+  setTimeout(()=>toastEl.classList.remove('show'),900);
+}
+
+function doArrive(){
+  state.app='arrived';
+  const side = Math.random()<.5?'left':'right';
+  const quips=[
+    'Your destination is on the '+side+'. Probably.',
+    'You have reached the end of your scribble.',
+    'Congratulations on going absolutely nowhere.',
+    'Destination reached. No idea where, but reached.',
+  ];
+  arriveSub.textContent=quips[Math.floor(Math.random()*quips.length)];
+  navbanner.classList.remove('show');
+  navbottom.classList.remove('show');
+  tapadv.classList.remove('show');
+  arrival.classList.add('show');
+  stopGps();
+  setTimeout(endNav, 2600);
+}
+
+/* ============================================================
+   GPS MODE
+   ============================================================ */
+const UNIT_M={in:0.0254, ft:0.3048, yd:0.9144};
+
+function openGpsSheet(){
+  legList.innerHTML='';
+  state.route.legs.forEach((leg,i)=>{
+    const row=document.createElement('div');
+    row.className='legrow';
+    const badge=document.createElement('div');
+    badge.className='legbadge';
+    badge.style.background = i===0?'var(--green)':(i===state.route.legs.length-1?'var(--red)':'var(--blue)');
+    badge.textContent=String.fromCharCode(65+Math.min(i,25));
+    const label=document.createElement('div');
+    label.className='leglabel';
+    label.textContent='Leg '+(i+1)+' · '+(i===state.route.legs.length-1?'to destination':'to next turn');
+    const inp=document.createElement('input');
+    inp.type='number'; inp.min='0'; inp.step='1'; inp.placeholder='0'; inp.value='';
+    inp.inputMode='decimal'; inp.dataset.idx=i;
+    const sel=document.createElement('select');
+    ['ft','yd','in'].forEach(u=>{const o=document.createElement('option');o.value=u;o.textContent=u;sel.appendChild(o);});
+    sel.dataset.idx=i;
+    row.append(badge,label,inp,sel);
+    legList.appendChild(row);
+  });
+  showSheet(gpsSheet);
+}
+
+gpsStartBtn.addEventListener('click',()=>{
+  const inputs=legList.querySelectorAll('input[type=number]');
+  const selects=legList.querySelectorAll('select');
+  let ok=true, total=0;
+  inputs.forEach((inp,i)=>{
+    const v=parseFloat(inp.value);
+    const u=selects[i].value;
+    if(!(v>0)){ ok=false; inp.style.borderColor='var(--red)'; }
+    else { inp.style.borderColor=''; 
+      const m=v*UNIT_M[u];
+      state.route.legs[i].meters=m;
+      state.route.legs[i].distText = v+' '+u;
+      total+=m;
+    }
+  });
+  if(!ok) return;
+  state.totalRouteM=total;
+  hideSheet(gpsSheet);
+  startNav();
+});
+
+function startGps(){
+  state.walkedM=0; state.lastFix=null;
+  if(!('geolocation' in navigator)){
+    gpschip.innerHTML='no GPS'; return;
+  }
+  try{
+    state.watchId=navigator.geolocation.watchPosition(onFix, onGeoErr,
+      {enableHighAccuracy:true, maximumAge:1000, timeout:15000});
+  }catch(e){ onGeoErr(e); }
+}
+function stopGps(){
+  if(state.watchId!=null && navigator.geolocation){
+    navigator.geolocation.clearWatch(state.watchId);
+  }
+  state.watchId=null;
+}
+function onGeoErr(){
+  gpschip.innerHTML='<span class="ping"></span>GPS?';
+}
+function haversine(a,b){
+  const R=6371000, toR=Math.PI/180;
+  const dLat=(b.lat-a.lat)*toR, dLng=(b.lng-a.lng)*toR;
+  const la1=a.lat*toR, la2=b.lat*toR;
+  const h=Math.sin(dLat/2)**2 + Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function onFix(pos){
+  const fix={lat:pos.coords.latitude, lng:pos.coords.longitude};
+  if(state.lastFix){
+    const d=haversine(state.lastFix,fix);
+    // jitter / teleport filter
+    if(d>1.2 && d<60){ state.walkedM+=d; }
+  }
+  state.lastFix=fix;
+  applyGpsProgress();
+}
+function applyGpsProgress(){
+  if(state.app!=='nav') return;
+  const total=state.totalRouteM||1;
+  let prog=Math.min(1, state.walkedM/total); // 0..1 over whole route
+  // map onto legs
+  let target=prog*total;     // meters along route
+  let acc=0, idx=0, legProg=0;
+  const legs=state.route.legs;
+  for(let i=0;i<legs.length;i++){
+    const m=legs[i].meters||0.01;
+    if(target<=acc+m || i===legs.length-1){
+      idx=i; legProg=Math.min(1,(target-acc)/m); break;
+    }
+    acc+=m;
+  }
+  // position dot
+  const leg=legs[idx];
+  state.dot.x=leg.from.x+(leg.to.x-leg.from.x)*legProg;
+  state.dot.y=leg.from.y+(leg.to.y-leg.from.y)*legProg;
+  state.camTarget={...state.dot};
+  if(idx!==state.legIndex){ state.legIndex=idx; state.legProgress=legProg; updateBanner(); }
+  else { state.legProgress=legProg; updateEta(); }
+  if(prog>=1){ doArrive(); }
+}
+
+/* ============================================================
+   RENDER LOOP
+   ============================================================ */
+function drawGrid(){
+  ctx.save();
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,CW,CH);
+  // faint map grid
+  const step=40;
+  ctx.strokeStyle='#f1f3f4'; ctx.lineWidth=1;
+  const ox=((-state.cam.x%step)+step)%step + (CW/2)%step;
+  const oy=((-state.cam.y%step)+step)%step + (CH/2)%step;
+  ctx.beginPath();
+  for(let x=ox%step;x<CW;x+=step){ ctx.moveTo(x,0); ctx.lineTo(x,CH); }
+  for(let y=oy%step;y<CH;y+=step){ ctx.moveTo(0,y); ctx.lineTo(CW,y); }
+  ctx.stroke();
+  // a couple faint "blocks" for flavour
+  ctx.restore();
+}
+
+function strokeRoute(pts, color){
+  if(pts.length<2) return;
+  // white casing
+  ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.beginPath();
+  pts.forEach((p,i)=>{ const s=worldToScreen(p.x,p.y); i?ctx.lineTo(s.x,s.y):ctx.moveTo(s.x,s.y); });
+  ctx.strokeStyle='rgba(0,0,0,0.06)'; ctx.lineWidth=12; ctx.stroke();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=10; ctx.stroke();
+  // color line
+  ctx.beginPath();
+  pts.forEach((p,i)=>{ const s=worldToScreen(p.x,p.y); i?ctx.lineTo(s.x,s.y):ctx.moveTo(s.x,s.y); });
+  ctx.strokeStyle=color; ctx.lineWidth=7; ctx.stroke();
+}
+
+function drawPin(p,kind){
+  const s=worldToScreen(p.x,p.y);
+  ctx.save();
+  if(kind==='start'||kind==='end'){
+    const col = kind==='start' ? '#34a853' : '#ea4335';
+    // teardrop pin
+    ctx.fillStyle=col;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y-16, 11, Math.PI, 0);
+    ctx.lineTo(s.x, s.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.arc(s.x, s.y-16, 4.5, 0, 7); ctx.fill();
+  } else {
+    ctx.fillStyle='#fff'; ctx.strokeStyle=state.color; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(s.x,s.y,5,0,7); ctx.fill(); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawDot(){
+  const s=worldToScreen(state.dot.x,state.dot.y);
+  ctx.save();
+  // accuracy halo
+  ctx.fillStyle=hexA(state.color,0.18);
+  ctx.beginPath(); ctx.arc(s.x,s.y,26,0,7); ctx.fill();
+  // white ring
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.arc(s.x,s.y,12,0,7); ctx.fill();
+  // colored dot
+  ctx.fillStyle=state.color;
+  ctx.beginPath(); ctx.arc(s.x,s.y,8,0,7); ctx.fill();
+  ctx.restore();
+}
+function hexA(hex,a){
+  const n=parseInt(hex.slice(1),16);
+  return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+}
+
+function render(){
+  // camera follow with soft lag
+  if(state.follow){
+    state.cam.x += (state.camTarget.x-state.cam.x)*0.12;
+    state.cam.y += (state.camTarget.y-state.cam.y)*0.12;
+  }
+  drawGrid();
+
+  if(state.app==='draw'){
+    if(state.mode==='auto' && pointer.down && state.freehand.length>1){
+      strokeRoute(state.freehand, state.color);
+    } else if(state.points.length){
+      strokeRoute(state.points, state.color);
+      state.points.forEach((p,i)=>{
+        if(i===0) drawPin(p,'start');
+        else if(i===state.points.length-1) drawPin(p,'end');
+        else drawPin(p,'mid');
+      });
+    }
+  } else if(state.route){
+    strokeRoute(state.route.wps, state.color);
+    drawPin(state.route.wps[0],'start');
+    drawPin(state.route.wps[state.route.wps.length-1],'end');
+    drawDot();
+  }
+  requestAnimationFrame(render);
+}
+
+/* ============================================================
+   SETTINGS SHEET
+   ============================================================ */
+function showSheet(sh){ scrim.classList.add('show'); sh.classList.add('show'); }
+function hideSheet(sh){ scrim.classList.remove('show'); sh.classList.remove('show'); }
+gearBtn.addEventListener('click',()=>showSheet(settingsSheet));
+scrim.addEventListener('click',()=>{ hideSheet(settingsSheet); hideSheet(gpsSheet); });
+
+modeSeg.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.mode==='auto' && state.gps) return; // blocked while gps on
+  state.mode=b.dataset.mode;
+  [...modeSeg.children].forEach(x=>x.classList.toggle('active',x===b));
+  // changing mode clears the canvas to avoid mixed data
+  state.points=[]; state.freehand=[];
+  updateDrawUI();
+});
+
+gpsToggle.addEventListener('change',()=>{
+  state.gps=gpsToggle.checked;
+  if(state.gps){
+    // force manual
+    state.mode='manual';
+    [...modeSeg.children].forEach(x=>x.classList.toggle('active',x.dataset.mode==='manual'));
+    [...modeSeg.children].forEach(x=>{ if(x.dataset.mode==='auto'){x.style.opacity='.4';x.style.pointerEvents='none';}});
+    gpsDesc.textContent='On. You\'ll set real leg distances before navigating. Manual mode only.';
+  } else {
+    [...modeSeg.children].forEach(x=>{ if(x.dataset.mode==='auto'){x.style.opacity='';x.style.pointerEvents='';}});
+    gpsDesc.textContent='Off by default — your real location can be jittery. Manual mode only.';
+  }
+  updateDrawUI();
+});
+
+/* ---------- init ---------- */
+document.documentElement.style.setProperty('--route',state.color);
+doResize();
+setTimeout(doResize,120);   // catch late layout in embedded/iframe contexts
+setTimeout(doResize,400);
+controls.classList.add('show');
+updateDrawUI();
+requestAnimationFrame(render);
+
+})();
+</script>
+</body>
+</html>
