@@ -1,3 +1,3 @@
 # The Chezburbr Repository
-A simple single-file .html website that tells people all about me, and what I do in the coding world with my free time.
-Literally just a webpage.
+A simple area for single-file .html websites that do things.
+Literally just webpages.
